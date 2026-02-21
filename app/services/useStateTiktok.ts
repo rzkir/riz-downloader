@@ -1,5 +1,10 @@
+import { ref, computed, watch, onMounted } from "vue";
+import { useQuery, useMutation } from "@tanstack/vue-query";
+import { useRuntimeConfig } from "nuxt/app";
+
 const HISTORY_STORAGE_KEY = "tiktok-download-history";
 const HISTORY_MAX = 50;
+const PLATFORM = "tiktok";
 
 function loadHistoryFromStorage(): HistoryItem[] {
     if (typeof window === "undefined") return [];
@@ -20,26 +25,155 @@ function saveHistoryToStorage(items: HistoryItem[]) {
     }
 }
 
+function buildVideoInfo(data: TiktokMetadataResponse, baseUrl: string, url: string): VideoInfo {
+    return {
+        videoUrl: data.videoUrlNoWaterMark ?? data.videoUrl,
+        previewVideoUrl: `${baseUrl}/api/${PLATFORM}/preview-video?url=${encodeURIComponent(url)}`,
+        audioUrl: data.audioUrl,
+        images: data.images ?? undefined,
+        cover: data.cover,
+        text: data.text,
+        author: data.author,
+    };
+}
+
+interface TiktokMetadataResponse {
+    videoUrl?: string;
+    videoUrlNoWaterMark?: string;
+    audioUrl?: string;
+    images?: string[] | null;
+    cover?: string;
+    text?: string;
+    author?: string;
+}
+
 export function useStateTiktok() {
     const config = useRuntimeConfig();
-    const platform = "tiktok";
+    const baseUrl = config.public.apiUrl as string;
 
+    // ---- UI state (minimal) ----
     const videoUrl = ref("");
-    const downloadLoading = ref(false);
-    const downloadError = ref("");
-    const downloadVideoLoading = ref(false);
-    const downloadMp3Loading = ref(false);
-    const downloadImagesLoading = ref(false);
-    const videoLoadFailed = ref(false);
-    const videoInfo = ref<VideoInfo | null>(null);
+    const searchUrl = ref("");
     const imageIndex = ref(0);
-
+    const videoLoadFailed = ref(false);
     const historyItems = ref<HistoryItem[]>([]);
-    if (typeof window !== "undefined") {
-        historyItems.value = loadHistoryFromStorage();
-    }
+    const historyReady = ref(false);
 
-    function addToHistory(url: string, data: { text?: string; author?: string; cover?: string; images?: string[]; videoUrl?: string; audioUrl?: string }) {
+    onMounted(() => {
+        historyItems.value = loadHistoryFromStorage();
+        historyReady.value = true;
+    });
+
+    // ---- Metadata: TanStack Query ----
+    const metadataQuery = useQuery({
+        queryKey: ["tiktok", "metadata", searchUrl] as const,
+        queryFn: async () => {
+            const res = await fetch(
+                `${baseUrl}/api/${PLATFORM}/metadata?url=${encodeURIComponent(searchUrl.value)}`,
+            );
+            const data = await res.json();
+            if (!res.ok) throw new Error(data.message ?? data.error ?? "Gagal mengambil data");
+            return data as TiktokMetadataResponse;
+        },
+        enabled: computed(() => !!searchUrl.value.trim()),
+        retry: false,
+    });
+
+    const videoInfo = computed(() => {
+        const url = searchUrl.value;
+        const data = metadataQuery.data.value;
+        if (!url || !data) return null;
+        return buildVideoInfo(data, baseUrl, url);
+    });
+
+    const downloadLoading = computed(
+        () => !!searchUrl.value.trim() && metadataQuery.isPending.value
+    );
+
+    watch([searchUrl, () => metadataQuery.data.value], () => {
+        const data = metadataQuery.data.value;
+        const url = searchUrl.value;
+        if (url && data)
+            addToHistory(url, {
+                text: data.text,
+                author: data.author,
+                cover: data.cover,
+                images: data.images ?? undefined,
+                videoUrl: data.videoUrlNoWaterMark ?? data.videoUrl,
+                audioUrl: data.audioUrl,
+            });
+    });
+
+    // ---- Download: TanStack Mutations ----
+    const downloadVideoMutation = useMutation({
+        mutationFn: async (url: string) => {
+            const res = await fetch(
+                `${baseUrl}/api/${PLATFORM}/download?url=${encodeURIComponent(url)}`,
+            );
+            if (!res.ok) throw new Error("Gagal unduh video");
+            return res.blob();
+        },
+        onSuccess(blob: Blob) {
+            triggerBlobDownload(blob, "tiktok_video.mp4");
+        },
+    });
+
+    const downloadMp3Mutation = useMutation({
+        mutationFn: async (url: string) => {
+            const res = await fetch(
+                `${baseUrl}/api/${PLATFORM}/download-mp3?url=${encodeURIComponent(url)}`,
+            );
+            if (!res.ok) throw new Error("Gagal unduh audio");
+            return res.blob();
+        },
+        onSuccess(blob: Blob) {
+            triggerBlobDownload(blob, "tiktok_audio.mp3");
+        },
+    });
+
+    const downloadImageMutation = useMutation({
+        mutationFn: async ({ url, index }: { url: string; index: number }) => {
+            const res = await fetch(
+                `${baseUrl}/api/${PLATFORM}/download-image?url=${encodeURIComponent(url)}&index=${index}`,
+            );
+            if (!res.ok) throw new Error("Gagal unduh gambar");
+            return res.blob();
+        },
+        onSuccess(blob: Blob, variables: { url: string; index: number }) {
+            const info = videoInfo.value;
+            const ext = info?.images?.[variables.index]?.includes(".webp")
+                ? "webp"
+                : info?.images?.[variables.index]?.includes(".png")
+                    ? "png"
+                    : "jpg";
+            triggerBlobDownload(blob, `tiktok_image_${variables.index + 1}.${ext}`);
+        },
+    });
+
+    const downloadVideoLoading = computed(() => downloadVideoMutation.isPending.value);
+    const downloadMp3Loading = computed(() => downloadMp3Mutation.isPending.value);
+    const downloadImagesLoading = computed(() => downloadImageMutation.isPending.value);
+    const downloadError = computed(() => {
+        const err =
+            metadataQuery.error.value ??
+            downloadVideoMutation.error.value ??
+            downloadMp3Mutation.error.value ??
+            downloadImageMutation.error.value;
+        return err instanceof Error ? err.message : err ? String(err) : "";
+    });
+
+    // ---- History ----
+    function addToHistory(
+        url: string,
+        data: {
+            text?: string;
+            author?: string;
+            cover?: string;
+            images?: string[];
+            videoUrl?: string;
+            audioUrl?: string;
+        },
+    ) {
         const type: HistoryItem["type"] = data.images?.length
             ? "Image"
             : data.audioUrl && !data.videoUrl
@@ -55,7 +189,10 @@ export function useStateTiktok() {
             type,
             date: Date.now(),
         };
-        const list = [item, ...historyItems.value.filter((i) => i.url !== url)].slice(0, HISTORY_MAX);
+        const list = [item, ...historyItems.value.filter((i: HistoryItem) => i.url !== url)].slice(
+            0,
+            HISTORY_MAX,
+        );
         historyItems.value = list;
         saveHistoryToStorage(list);
     }
@@ -67,7 +204,9 @@ export function useStateTiktok() {
 
     function openHistoryItem(item: HistoryItem) {
         videoUrl.value = item.url;
-        onSearch();
+        searchUrl.value = item.url;
+        imageIndex.value = 0;
+        videoLoadFailed.value = false;
     }
 
     function triggerBlobDownload(blob: Blob, filename: string) {
@@ -79,118 +218,42 @@ export function useStateTiktok() {
         URL.revokeObjectURL(url);
     }
 
-    async function onSearch() {
+    // ---- Actions ----
+    function onSearch() {
         const url = videoUrl.value.trim();
         if (!url) return;
-        downloadError.value = "";
-        videoInfo.value = null;
-        videoLoadFailed.value = false;
         imageIndex.value = 0;
-        downloadLoading.value = true;
-        try {
-            const base = config.public.apiUrl as string;
-            const res = await fetch(
-                `${base}/api/${platform}/metadata?url=${encodeURIComponent(url)}`,
-            );
-            const data = await res.json();
-            if (!res.ok)
-                throw new Error(data.message || data.error || "Gagal mengambil data");
-            const baseUrl = config.public.apiUrl as string;
-            videoInfo.value = {
-                videoUrl: data.videoUrlNoWaterMark || data.videoUrl,
-                previewVideoUrl: `${baseUrl}/api/${platform}/preview-video?url=${encodeURIComponent(url)}`,
-                audioUrl: data.audioUrl,
-                images: data.images || undefined,
-                cover: data.cover,
-                text: data.text,
-                author: data.author,
-            };
-            addToHistory(url, {
-                text: data.text,
-                author: data.author,
-                cover: data.cover,
-                images: data.images,
-                videoUrl: data.videoUrlNoWaterMark || data.videoUrl,
-                audioUrl: data.audioUrl,
-            });
-        } catch (e: unknown) {
-            downloadError.value =
-                e instanceof Error ? e.message : "Gagal mengambil data";
-        } finally {
-            downloadLoading.value = false;
-        }
+        videoLoadFailed.value = false;
+        downloadVideoMutation.reset();
+        downloadMp3Mutation.reset();
+        downloadImageMutation.reset();
+        searchUrl.value = url;
     }
 
-    async function onDownloadVideo() {
-        const url = videoUrl.value.trim();
+    function onDownloadVideo() {
+        const url = searchUrl.value.trim();
         if (!url || !videoInfo.value) return;
-        downloadVideoLoading.value = true;
-        try {
-            const base = config.public.apiUrl as string;
-            const res = await fetch(
-                `${base}/api/${platform}/download?url=${encodeURIComponent(url)}`,
-            );
-            if (!res.ok) throw new Error("Gagal unduh video");
-            const blob = await res.blob();
-            triggerBlobDownload(blob, "tiktok_video.mp4");
-        } catch (e: unknown) {
-            downloadError.value = e instanceof Error ? e.message : "Gagal unduh video";
-        } finally {
-            downloadVideoLoading.value = false;
-        }
+        downloadVideoMutation.mutate(url);
     }
 
-    async function onDownloadMp3() {
-        const url = videoUrl.value.trim();
+    function onDownloadMp3() {
+        const url = searchUrl.value.trim();
         if (!url || !videoInfo.value) return;
-        downloadMp3Loading.value = true;
-        try {
-            const base = config.public.apiUrl as string;
-            const res = await fetch(
-                `${base}/api/${platform}/download-mp3?url=${encodeURIComponent(url)}`,
-            );
-            if (!res.ok) throw new Error("Gagal unduh audio");
-            const blob = await res.blob();
-            triggerBlobDownload(blob, "tiktok_audio.mp3");
-        } catch (e: unknown) {
-            downloadError.value = e instanceof Error ? e.message : "Gagal unduh audio";
-        } finally {
-            downloadMp3Loading.value = false;
-        }
+        downloadMp3Mutation.mutate(url);
     }
 
-    async function onDownloadImages() {
-        const url = videoUrl.value.trim();
+    function onDownloadImages() {
+        const url = searchUrl.value.trim();
         const info = videoInfo.value;
         if (!url || !info?.images?.length) return;
-        downloadImagesLoading.value = true;
-        downloadError.value = "";
-        const idx = imageIndex.value;
-        try {
-            const base = config.public.apiUrl as string;
-            const res = await fetch(
-                `${base}/api/${platform}/download-image?url=${encodeURIComponent(url)}&index=${idx}`,
-            );
-            if (!res.ok) throw new Error("Gagal unduh gambar");
-            const blob = await res.blob();
-            const ext = info.images[idx]?.includes(".webp")
-                ? "webp"
-                : info.images[idx]?.includes(".png")
-                    ? "png"
-                    : "jpg";
-            triggerBlobDownload(blob, `tiktok_image_${idx + 1}.${ext}`);
-        } catch (e: unknown) {
-            downloadError.value = e instanceof Error ? e.message : "Gagal unduh gambar";
-        } finally {
-            downloadImagesLoading.value = false;
-        }
+        downloadImageMutation.mutate({ url, index: imageIndex.value });
     }
 
     function onDownloadAnother() {
         videoUrl.value = "";
-        videoInfo.value = null;
-        downloadError.value = "";
+        searchUrl.value = "";
         imageIndex.value = 0;
+        videoLoadFailed.value = false;
         document.getElementById("download-input")?.scrollIntoView({ behavior: "smooth" });
     }
 
@@ -205,6 +268,7 @@ export function useStateTiktok() {
         videoInfo,
         imageIndex,
         historyItems,
+        historyReady,
         clearHistory,
         openHistoryItem,
         onSearch,
@@ -213,24 +277,4 @@ export function useStateTiktok() {
         onDownloadImages,
         onDownloadAnother,
     };
-}
-
-export function getFaqItems() {
-    return [
-        {
-            question: "Is VideoMax totally free to use?",
-            answer:
-                "Yes! VideoMax is and will always be free. We provide high-quality downloads without any hidden subscription fees.",
-        },
-        {
-            question: "Can I download videos without watermarks?",
-            answer:
-                "Absolutely. Our tool specifically extracts the clean video stream directly from the servers to ensure no platform watermark is present.",
-        },
-        {
-            question: "Do you support MP3 conversion?",
-            answer:
-                "Yes, you can choose to download only the audio track in high-quality MP3 format for any video link provided.",
-        },
-    ];
 }

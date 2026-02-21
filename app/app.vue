@@ -1,21 +1,16 @@
 <template>
   <NuxtLayout>
-    <AuthContext>
-      <Header />
-      <NuxtPage />
-      <Footer />
-      <ClientOnly>
-        <Toaster
-          position="top-center"
-          rich-colors
-          :toast-options="{
-            duration: 3000,
-            className: 'font-medium',
-          }"
-        />
-        <template #fallback />
-      </ClientOnly>
-    </AuthContext>
+    <Header />
+    <NuxtPage />
+    <Footer />
+    <Toaster
+      position="top-center"
+      rich-colors
+      :toast-options="{
+        duration: 3000,
+        className: 'font-medium',
+      }"
+    />
   </NuxtLayout>
 </template>
 

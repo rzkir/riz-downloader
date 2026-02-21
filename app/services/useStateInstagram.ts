@@ -1,5 +1,10 @@
+import { ref, computed, watch, onMounted } from "vue";
+import { useQuery, useMutation } from "@tanstack/vue-query";
+import { useRuntimeConfig } from "nuxt/app";
+
 const HISTORY_STORAGE_KEY = "instagram-download-history";
 const HISTORY_MAX = 50;
+const PLATFORM = "instagram";
 
 function loadHistoryFromStorage(): HistoryItem[] {
     if (typeof window === "undefined") return [];
@@ -20,29 +25,142 @@ function saveHistoryToStorage(items: HistoryItem[]) {
     }
 }
 
+function buildVideoInfo(data: InstagramMetadataResponse, baseUrl: string, url: string): VideoInfo {
+    const count = data.images?.length ?? (data.cover ? 1 : 0);
+    const previewImageUrls = count
+        ? Array.from(
+            { length: count },
+            (_, i) =>
+                `${baseUrl}/api/${PLATFORM}/preview-image?url=${encodeURIComponent(url)}&index=${i}`,
+        )
+        : undefined;
+    return {
+        videoUrl: data.videoUrl,
+        previewVideoUrl: data.videoUrl
+            ? `${baseUrl}/api/${PLATFORM}/preview-video?url=${encodeURIComponent(url)}`
+            : undefined,
+        audioUrl: undefined,
+        images: data.images ?? undefined,
+        cover: data.cover,
+        previewImageUrls,
+        text: data.text,
+        author: data.author,
+    };
+}
+
+interface InstagramMetadataResponse {
+    videoUrl?: string;
+    images?: string[] | null;
+    cover?: string;
+    text?: string;
+    author?: string;
+}
+
 export function useStateInstagram() {
     const config = useRuntimeConfig();
-    const platform = "instagram";
+    const baseUrl = config.public.apiUrl as string;
 
+    // ---- UI state (minimal) ----
     const videoUrl = ref("");
-    const downloadLoading = ref(false);
-    const downloadError = ref("");
-    const downloadVideoLoading = ref(false);
-    const downloadMp3Loading = ref(false);
-    const downloadImagesLoading = ref(false);
-    const videoLoadFailed = ref(false);
-    const videoInfo = ref<VideoInfo | null>(null);
+    const searchUrl = ref(""); // set on Search / openHistoryItem → drives query
     const imageIndex = ref(0);
-
+    const videoLoadFailed = ref(false);
     const historyItems = ref<HistoryItem[]>([]);
-    if (typeof window !== "undefined") {
-        historyItems.value = loadHistoryFromStorage();
-    }
+    const historyReady = ref(false);
 
-    function addToHistory(url: string, data: { text?: string; author?: string; cover?: string; images?: string[]; videoUrl?: string }) {
-        const type: HistoryItem["type"] = data.images?.length
-            ? "Image"
-            : "Video";
+    onMounted(() => {
+        historyItems.value = loadHistoryFromStorage();
+        historyReady.value = true;
+    });
+
+    // ---- Metadata: TanStack Query ----
+    const metadataQuery = useQuery({
+        queryKey: ["instagram", "metadata", searchUrl] as const,
+        queryFn: async () => {
+            const res = await fetch(
+                `${baseUrl}/api/${PLATFORM}/metadata?url=${encodeURIComponent(searchUrl.value)}`,
+            );
+            const data = await res.json();
+            if (!res.ok) throw new Error(data.message ?? data.error ?? "Gagal mengambil data");
+            return data as InstagramMetadataResponse;
+        },
+        enabled: computed(() => !!searchUrl.value.trim()),
+        retry: false,
+    });
+
+    const videoInfo = computed(() => {
+        const url = searchUrl.value;
+        const data = metadataQuery.data.value;
+        if (!url || !data) return null;
+        return buildVideoInfo(data, baseUrl, url);
+    });
+
+    const downloadLoading = computed(
+        () => !!searchUrl.value.trim() && metadataQuery.isPending.value
+    );
+
+    watch([searchUrl, () => metadataQuery.data.value], () => {
+        const data = metadataQuery.data.value;
+        const url = searchUrl.value;
+        if (url && data)
+            addToHistory(url, {
+                text: data.text,
+                author: data.author,
+                cover: data.cover,
+                images: data.images ?? undefined,
+                videoUrl: data.videoUrl,
+            });
+    });
+
+    // ---- Download: TanStack Mutations ----
+    const downloadVideoMutation = useMutation({
+        mutationFn: async (url: string) => {
+            const res = await fetch(
+                `${baseUrl}/api/${PLATFORM}/download?url=${encodeURIComponent(url)}`,
+            );
+            if (!res.ok) throw new Error("Gagal unduh video");
+            return res.blob();
+        },
+        onSuccess(blob: Blob) {
+            triggerBlobDownload(blob, "instagram_video.mp4");
+        },
+    });
+
+    const downloadImageMutation = useMutation({
+        mutationFn: async ({ url, index }: { url: string; index: number }) => {
+            const res = await fetch(
+                `${baseUrl}/api/${PLATFORM}/download-image?url=${encodeURIComponent(url)}&index=${index}`,
+            );
+            if (!res.ok) throw new Error("Gagal unduh gambar");
+            return res.blob();
+        },
+        onSuccess(blob: Blob, variables: { url: string; index: number }) {
+            const info = videoInfo.value;
+            const ext = info?.images?.[variables.index]?.includes(".webp")
+                ? "webp"
+                : info?.images?.[variables.index]?.includes(".png")
+                    ? "png"
+                    : "jpg";
+            triggerBlobDownload(blob, `instagram_image_${variables.index + 1}.${ext}`);
+        },
+    });
+
+    const downloadVideoLoading = computed(() => downloadVideoMutation.isPending.value);
+    const downloadImagesLoading = computed(() => downloadImageMutation.isPending.value);
+    const downloadError = computed(() => {
+        const err =
+            metadataQuery.error.value ??
+            downloadVideoMutation.error.value ??
+            downloadImageMutation.error.value;
+        return err instanceof Error ? err.message : err ? String(err) : "";
+    });
+
+    // ---- History (local only) ----
+    function addToHistory(
+        url: string,
+        data: { text?: string; author?: string; cover?: string; images?: string[]; videoUrl?: string },
+    ) {
+        const type: HistoryItem["type"] = data.images?.length ? "Image" : "Video";
         const cover = data.cover || data.images?.[0] || "";
         const item: HistoryItem = {
             id: `${Date.now()}-${url.slice(-12)}`,
@@ -53,7 +171,7 @@ export function useStateInstagram() {
             type,
             date: Date.now(),
         };
-        const list = [item, ...historyItems.value.filter((i) => i.url !== url)].slice(0, HISTORY_MAX);
+        const list = [item, ...historyItems.value.filter((i: HistoryItem) => i.url !== url)].slice(0, HISTORY_MAX);
         historyItems.value = list;
         saveHistoryToStorage(list);
     }
@@ -65,7 +183,13 @@ export function useStateInstagram() {
 
     function openHistoryItem(item: HistoryItem) {
         videoUrl.value = item.url;
-        onSearch();
+        searchUrl.value = item.url;
+        imageIndex.value = 0;
+        videoLoadFailed.value = false;
+    }
+
+    function getHistoryPreviewUrl(item: HistoryItem): string {
+        return `${baseUrl}/api/${PLATFORM}/preview-image?url=${encodeURIComponent(item.url)}&index=0`;
     }
 
     function triggerBlobDownload(blob: Blob, filename: string) {
@@ -77,100 +201,35 @@ export function useStateInstagram() {
         URL.revokeObjectURL(url);
     }
 
-    async function onSearch() {
+    // ---- Actions ----
+    function onSearch() {
         const url = videoUrl.value.trim();
         if (!url) return;
-        downloadError.value = "";
-        videoInfo.value = null;
-        videoLoadFailed.value = false;
         imageIndex.value = 0;
-        downloadLoading.value = true;
-        try {
-            const base = config.public.apiUrl as string;
-            const res = await fetch(
-                `${base}/api/${platform}/metadata?url=${encodeURIComponent(url)}`,
-            );
-            const data = await res.json();
-            if (!res.ok)
-                throw new Error(data.message || data.error || "Gagal mengambil data");
-            const baseUrl = config.public.apiUrl as string;
-            videoInfo.value = {
-                videoUrl: data.videoUrl,
-                previewVideoUrl: data.videoUrl
-                    ? `${baseUrl}/api/${platform}/preview-video?url=${encodeURIComponent(url)}`
-                    : undefined,
-                audioUrl: undefined,
-                images: data.images || undefined,
-                cover: data.cover,
-                text: data.text,
-                author: data.author,
-            };
-            addToHistory(url, {
-                text: data.text,
-                author: data.author,
-                cover: data.cover,
-                images: data.images,
-                videoUrl: data.videoUrl,
-            });
-        } catch (e: unknown) {
-            downloadError.value =
-                e instanceof Error ? e.message : "Gagal mengambil data";
-        } finally {
-            downloadLoading.value = false;
-        }
+        videoLoadFailed.value = false;
+        downloadVideoMutation.reset();
+        downloadImageMutation.reset();
+        searchUrl.value = url;
     }
 
-    async function onDownloadVideo() {
-        const url = videoUrl.value.trim();
+    function onDownloadVideo() {
+        const url = searchUrl.value.trim();
         if (!url || !videoInfo.value) return;
-        downloadVideoLoading.value = true;
-        try {
-            const base = config.public.apiUrl as string;
-            const res = await fetch(
-                `${base}/api/${platform}/download?url=${encodeURIComponent(url)}`,
-            );
-            if (!res.ok) throw new Error("Gagal unduh video");
-            const blob = await res.blob();
-            triggerBlobDownload(blob, "instagram_video.mp4");
-        } catch (e: unknown) {
-            downloadError.value = e instanceof Error ? e.message : "Gagal unduh video";
-        } finally {
-            downloadVideoLoading.value = false;
-        }
+        downloadVideoMutation.mutate(url);
     }
 
-    async function onDownloadImages() {
-        const url = videoUrl.value.trim();
+    function onDownloadImages() {
+        const url = searchUrl.value.trim();
         const info = videoInfo.value;
         if (!url || !info?.images?.length) return;
-        downloadImagesLoading.value = true;
-        downloadError.value = "";
-        const idx = imageIndex.value;
-        try {
-            const base = config.public.apiUrl as string;
-            const res = await fetch(
-                `${base}/api/${platform}/download-image?url=${encodeURIComponent(url)}&index=${idx}`,
-            );
-            if (!res.ok) throw new Error("Gagal unduh gambar");
-            const blob = await res.blob();
-            const ext = info.images[idx]?.includes(".webp")
-                ? "webp"
-                : info.images[idx]?.includes(".png")
-                    ? "png"
-                    : "jpg";
-            triggerBlobDownload(blob, `instagram_image_${idx + 1}.${ext}`);
-        } catch (e: unknown) {
-            downloadError.value = e instanceof Error ? e.message : "Gagal unduh gambar";
-        } finally {
-            downloadImagesLoading.value = false;
-        }
+        downloadImageMutation.mutate({ url, index: imageIndex.value });
     }
 
     function onDownloadAnother() {
         videoUrl.value = "";
-        videoInfo.value = null;
-        downloadError.value = "";
+        searchUrl.value = "";
         imageIndex.value = 0;
+        videoLoadFailed.value = false;
         document.getElementById("download-input")?.scrollIntoView({ behavior: "smooth" });
     }
 
@@ -179,37 +238,19 @@ export function useStateInstagram() {
         downloadLoading,
         downloadError,
         downloadVideoLoading,
-        downloadMp3Loading,
+        downloadMp3Loading: ref(false),
         downloadImagesLoading,
         videoLoadFailed,
         videoInfo,
         imageIndex,
         historyItems,
+        historyReady,
         clearHistory,
         openHistoryItem,
+        getHistoryPreviewUrl,
         onSearch,
         onDownloadVideo,
         onDownloadImages,
         onDownloadAnother,
     };
-}
-
-export function getFaqItemsInstagram() {
-    return [
-        {
-            question: "Is the Instagram downloader free?",
-            answer:
-                "Yes! Download Instagram reels and posts for free. No sign-up or subscription required.",
-        },
-        {
-            question: "Can I download Instagram Reels?",
-            answer:
-                "Yes. Paste any public Reel or post link (including /p/ and /reel/) and we'll fetch the video or photos for download.",
-        },
-        {
-            question: "Do you support carousel posts?",
-            answer:
-                "Yes. For posts with multiple photos, you can download each image individually.",
-        },
-    ];
 }

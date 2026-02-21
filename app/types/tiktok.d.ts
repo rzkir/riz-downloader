@@ -4,6 +4,7 @@ type VideoInfo = {
     audioUrl?: string;
     images?: string[];
     cover?: string;
+    previewImageUrls?: string[];
     text?: string;
     author?: string;
 };
