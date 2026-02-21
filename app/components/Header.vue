@@ -1,6 +1,6 @@
 <template>
   <nav
-    class="relative z-50 flex items-center justify-between px-6 py-8 container mx-auto w-full"
+    class="relative z-50 flex items-center justify-between px-8 md:px-20 py-8 max-w-[1440px] mx-auto w-full"
   >
     <NuxtLink to="/" class="flex items-center gap-2 cursor-default">
       <div
@@ -9,7 +9,7 @@
         <iconify-icon icon="lucide:play" class="text-white text-xl" />
       </div>
       <span class="font-heading text-2xl font-black tracking-tighter">
-        Down<span class="text-[#FF3D57]">Tik</span>
+        Video<span class="text-[#FF3D57]">Max</span>
       </span>
     </NuxtLink>
 
@@ -23,19 +23,12 @@
         <iconify-icon icon="lucide:mail" class="text-lg" />
         Email
       </a>
-      <NuxtLink
-        to="/instagram"
-        class="hover:text-[#FF3D57] transition-colors flex items-center gap-2"
-      >
-        <iconify-icon icon="mdi:instagram" class="text-lg" />
-        Instagram
-      </NuxtLink>
       <a
-        href="#faq"
+        href="#dribbble"
         class="hover:text-[#FF3D57] transition-colors flex items-center gap-2"
       >
-        <iconify-icon icon="lucide:help-circle" class="text-lg" />
-        FAQ
+        <iconify-icon icon="lucide:dribbble" class="text-lg" />
+        Dribbble
       </a>
       <div class="flex items-center gap-2 cursor-pointer group">
         <iconify-icon icon="lucide:languages" class="text-lg text-[#FF3D57]" />

@@ -1,3 +1,4 @@
+/// <reference types="node" />
 import tailwindcss from '@tailwindcss/vite'
 
 export default defineNuxtConfig({
@@ -6,7 +7,7 @@ export default defineNuxtConfig({
   css: ['~/assets/css/tailwind.css'],
   runtimeConfig: {
     public: {
-      apiUrl: process.env.NUXT_PUBLIC_API_URL || 'http://localhost:3001',
+      apiUrl: process.env.NUXT_PUBLIC_API_URL as string,
     },
   },
   app: {

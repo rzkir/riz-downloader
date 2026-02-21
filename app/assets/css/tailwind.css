@@ -8,19 +8,29 @@
 }
 
 body {
-  font-family: "Plus Jakarta Sans", "Satoshi", sans-serif;
-  background-color: #0F0F0F;
+  font-family: "Satoshi", "Plus Jakarta Sans", sans-serif;
+  background-color: #05060f;
   color: white;
   scroll-behavior: smooth;
+  overflow-x: hidden;
 }
 
 .floating-emoji {
   animation: float 4s ease-in-out infinite;
 }
 
+.floating {
+  animation: float 5s ease-in-out infinite;
+}
+
 @keyframes float {
-  0%, 100% { transform: translateY(0); }
-  50% { transform: translateY(-20px); }
+  0%,
+  100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-20px);
+  }
 }
 
 .wavy-line {
@@ -30,7 +40,9 @@ body {
 }
 
 @keyframes dash {
-  to { stroke-dashoffset: 0; }
+  to {
+    stroke-dashoffset: 0;
+  }
 }
 
 /* VideoMax / current design */
@@ -66,6 +78,48 @@ body {
     opacity: 1;
     transform: translateY(0);
   }
+}
+
+/* SocialMax / VideoMax brand utilities */
+.brand-gradient {
+  background: linear-gradient(45deg, #ff3d57 0%, #bc1888 50%, #f09433 100%);
+}
+
+.text-brand-gradient {
+  background: linear-gradient(45deg, #ff3d57 0%, #bc1888 50%, #f09433 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.glass-card {
+  background: rgba(255, 255, 255, 0.03);
+  backdrop-filter: blur(16px);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.service-tab-active {
+  background: rgba(255, 255, 255, 0.1);
+  border-color: rgba(255, 255, 255, 0.2);
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
+}
+
+.input-glow:focus-within {
+  box-shadow: 0 0 40px rgba(188, 24, 136, 0.25);
+  border-color: rgba(188, 24, 136, 0.4);
+}
+
+.text-outline {
+  -webkit-text-stroke: 1px rgba(255, 255, 255, 0.05);
+  color: transparent;
+}
+
+.font-heading {
+  font-family: "Cabinet Grotesk", sans-serif;
+}
+
+.results-enter {
+  animation: resultsEnter 0.5s ease-out forwards;
 }
 
 @theme inline {

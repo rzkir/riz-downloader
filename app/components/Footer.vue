@@ -1,8 +1,8 @@
 <template>
-  <footer class="py-12 px-6 container mx-auto border-t border-white/5">
-    <div class="flex flex-col md:flex-row justify-between items-center gap-8">
+  <footer class="bg-[#0A0A0A] py-12 px-8 border-t border-white/5">
+    <div class="max-w-[1440px] mx-auto flex flex-col md:flex-row justify-between items-center gap-8">
       <p class="text-white/30 text-sm font-medium">
-        &copy; 2026 Downloadin. Made with Passion for Creators.
+        &copy; 2024 VideoMax. Made with Passion for Creators.
       </p>
       <div class="flex gap-10">
         <a

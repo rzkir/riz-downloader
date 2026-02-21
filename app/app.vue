@@ -1,8 +1,11 @@
 <template>
   <NuxtLayout>
-    <Header />
-    <NuxtPage />
-    <Footer />
+    <div class="min-h-screen flex flex-col relative">
+      <div class="mesh-bg" aria-hidden="true" />
+      <Header />
+      <NuxtPage />
+      <Footer />
+    </div>
     <Toaster
       position="top-center"
       rich-colors
@@ -18,7 +21,7 @@
 import { Toaster } from "~/components/ui/sonner";
 
 useHead({
-  title: "DownTik.to | Download TikTok Video by Link!",
+  title: "VideoMax - Universal Social Media Downloader",
   htmlAttrs: {
     lang: "id",
   },
