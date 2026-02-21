@@ -5,37 +5,34 @@
         &copy; 2024 VideoMax. Made with Passion for Creators.
       </p>
       <div class="flex gap-10">
-        <a
-          href="#terms"
+        <NuxLink
+          to="#terms"
           class="text-xs uppercase font-heading font-black tracking-widest text-white/40 hover:text-white transition-colors"
-          >Terms</a
-        >
-        <a
-          href="#privacy"
+          >Terms</NuxLink>
+        <NuxLink
+          to="#privacy"
           class="text-xs uppercase font-heading font-black tracking-widest text-white/40 hover:text-white transition-colors"
-          >Privacy</a
-        >
-        <a
-          href="#contact"
+          >Privacy</NuxLink>
+        <NuxLink
+          to="#contact"
           class="text-xs uppercase font-heading font-black tracking-widest text-white/40 hover:text-white transition-colors"
-          >Contact</a
-        >
+          >Contact</NuxLink>
       </div>
       <div class="flex gap-6">
-        <a
-          href="#"
+        <NuxLink
+          to="#"
           class="w-10 h-10 rounded-full border border-white/10 flex items-center justify-center hover:bg-[#FF3D57] hover:border-[#FF3D57] transition-all"
           aria-label="Twitter"
         >
           <iconify-icon icon="lucide:twitter" class="text-white" />
-        </a>
-        <a
-          href="#"
+        </NuxLink>
+        <NuxLink
+          to="#"
           class="w-10 h-10 rounded-full border border-white/10 flex items-center justify-center hover:bg-[#FF3D57] hover:border-[#FF3D57] transition-all"
           aria-label="GitHub"
         >
           <iconify-icon icon="lucide:github" class="text-white" />
-        </a>
+        </NuxLink>
       </div>
     </div>
   </footer>

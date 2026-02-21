@@ -1,6 +1,6 @@
 import { ref, computed, watch, onMounted } from "vue";
 import { useQuery, useMutation } from "@tanstack/vue-query";
-import { useRuntimeConfig } from "nuxt/app";
+import { useAppConfig } from "~/lib/config";
 
 const HISTORY_STORAGE_KEY = "tiktok-download-history";
 const HISTORY_MAX = 50;
@@ -48,8 +48,8 @@ interface TiktokMetadataResponse {
 }
 
 export function useStateTiktok() {
-    const config = useRuntimeConfig();
-    const baseUrl = config.public.apiUrl as string;
+    const { apiUrl } = useAppConfig();
+    const baseUrl = apiUrl;
 
     // ---- UI state (minimal) ----
     const videoUrl = ref("");
