@@ -1,5 +1,9 @@
+type QualityOption = { label: string; url: string };
+
 type VideoInfo = {
     videoUrl?: string;
+    videoUrlHd?: string;
+    qualities?: QualityOption[];
     previewVideoUrl?: string;
     audioUrl?: string;
     images?: string[];
@@ -7,6 +11,9 @@ type VideoInfo = {
     previewImageUrls?: string[];
     text?: string;
     author?: string;
+    duration?: string;
+    durationMs?: number;
+    id?: string;
 };
 
 type HistoryItem = {

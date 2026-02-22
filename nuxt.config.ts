@@ -4,7 +4,14 @@ import tailwindcss from '@tailwindcss/vite'
 export default defineNuxtConfig({
   compatibilityDate: '2025-07-15',
   devtools: { enabled: true },
-  css: ['~/assets/css/tailwind.css'],
+  components: [
+    {
+      path: '~/components',
+      extensions: ['.vue'],
+      ignore: ['**/*.ts'],
+    },
+  ],
+  css: ['vue-sonner/style.css', '~/assets/css/tailwind.css'],
   runtimeConfig: {
     public: {
       apiUrl: "",

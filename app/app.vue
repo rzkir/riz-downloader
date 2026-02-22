@@ -7,11 +7,12 @@
       <Footer />
     </div>
     <Toaster
-      position="top-center"
+      theme="dark"
+      position="bottom-right"
       rich-colors
       :toast-options="{
         duration: 3000,
-        className: 'font-medium',
+        class: 'font-medium',
       }"
     />
   </NuxtLayout>
@@ -21,7 +22,7 @@
 import { Toaster } from "~/components/ui/sonner";
 
 useHead({
-  title: "VideoMax - Universal Social Media Downloader",
+  title: "Downloadin - One Tool. All Social Media.",
   htmlAttrs: {
     lang: "id",
   },

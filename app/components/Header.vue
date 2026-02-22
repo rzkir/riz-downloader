@@ -37,7 +37,10 @@
             <button
               type="button"
               class="relative flex items-center gap-2 rounded-full px-4 py-2 hover:text-white hover:bg-white/5 transition-colors after:absolute after:left-0 after:bottom-0 after:h-0.5 after:bg-[#FF3D57] after:scale-x-0 group-hover:after:scale-x-100 after:origin-right after:transition-transform"
-              :class="{ 'text-white after:scale-x-100! bg-[#FF3D57]/20': isServicesActive }"
+              :class="{
+                'text-white after:scale-x-100! bg-[#FF3D57]/20':
+                  isServicesActive,
+              }"
             >
               <iconify-icon icon="lucide:layers" class="text-lg opacity-80" />
               Services
@@ -67,6 +70,14 @@
                 >
                   <iconify-icon icon="lucide:camera" class="text-base" />
                   Instagram
+                </NuxtLink>
+                <NuxtLink
+                  to="/facebook"
+                  class="flex items-center gap-2 mx-1 rounded-lg px-4 py-2 text-sm text-white/90 transition-colors hover:bg-white/10 hover:text-[#FF3D57]"
+                  active-class="bg-white/10 text-[#FF3D57]"
+                >
+                  <iconify-icon icon="lucide:facebook" class="text-base" />
+                  Facebook
                 </NuxtLink>
                 <NuxtLink
                   to="/youtube"
@@ -197,6 +208,15 @@
                   Instagram
                 </NuxtLink>
                 <NuxtLink
+                  to="/facebook"
+                  class="flex items-center gap-2 rounded-lg px-4 py-2.5 text-sm text-white/90 transition-colors hover:bg-white/10 hover:text-[#FF3D57]"
+                  active-class="bg-white/10 text-[#FF3D57]"
+                  @click="menuOpen = false"
+                >
+                  <iconify-icon icon="lucide:facebook" class="text-base" />
+                  Facebook
+                </NuxtLink>
+                <NuxtLink
                   to="/youtube"
                   class="flex items-center gap-2 rounded-lg px-4 py-2.5 text-sm text-white/90 transition-colors hover:bg-white/10 hover:text-[#FF3D57]"
                   active-class="bg-white/10 text-[#FF3D57]"
@@ -242,9 +262,11 @@ const isServicesActive = computed(
   () =>
     route.path === "/tiktok" ||
     route.path === "/instagram" ||
+    route.path === "/facebook" ||
     route.path === "/youtube" ||
     route.path.startsWith("/tiktok/") ||
     route.path.startsWith("/instagram/") ||
+    route.path.startsWith("/facebook/") ||
     route.path.startsWith("/youtube/"),
 );
 </script>

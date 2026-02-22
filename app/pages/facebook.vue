@@ -10,33 +10,33 @@
       <div class="grid lg:grid-cols-2 gap-8 lg:gap-12 items-center pt-8 pb-10 sm:pt-10 sm:pb-12 md:pt-12 md:pb-16">
         <div class="order-2 lg:order-1">
           <div class="mb-6 inline-flex items-center gap-3">
-            <div class="w-12 h-[2px] bg-[#E4405F]" />
+            <div class="w-12 h-[2px] bg-[#1877F2]" />
             <span
-              class="uppercase tracking-[0.4em] text-xs font-heading font-black text-[#E4405F]"
-              >Instagram</span
+              class="uppercase tracking-[0.4em] text-xs font-heading font-black text-[#1877F2]"
+              >Facebook</span
             >
           </div>
 
           <h1
             class="font-heading text-4xl sm:text-5xl md:text-7xl font-black leading-[0.95] mb-6 sm:mb-8"
           >
-            Instagram <br />
-            <span class="text-[#E4405F]">Downloader</span>
+            Facebook <br />
+            <span class="text-[#1877F2]">Downloader</span>
           </h1>
 
           <p class="text-white/50 text-base sm:text-lg max-w-lg mb-8 sm:mb-12">
-            Download Reels, posts, Stories, and carousels. Paste any public
-            Instagram link and get your file in seconds.
+            Download video dari Facebook &amp; fb.watch. Tempel link video publik
+            dan unduh dalam hitungan detik.
           </p>
 
           <div id="download-input" class="relative w-full max-w-2xl mb-8 sm:mb-12">
             <div
-              class="bg-[#1A1A1A] p-2 sm:p-3 rounded-2xl sm:rounded-full flex flex-col sm:flex-row items-stretch sm:items-center gap-2 sm:gap-0 border border-white/5 shadow-2xl shadow-black/40 focus-within:border-[#E4405F]/50 transition-all"
+              class="bg-[#1A1A1A] p-2 sm:p-3 rounded-2xl sm:rounded-full flex flex-col sm:flex-row items-stretch sm:items-center gap-2 sm:gap-0 border border-white/5 shadow-2xl shadow-black/40 focus-within:border-[#1877F2]/50 transition-all"
             >
               <UiInput
                 v-model="videoUrl"
                 type="text"
-                placeholder="Insert Instagram Post / Reel / Story Link Here..."
+                placeholder="Insert Facebook / fb.watch / Story Link Here..."
                 class="bg-transparent flex-1 min-w-0 py-3 sm:py-4 pl-4 sm:pl-5 text-sm sm:text-base text-white outline-none placeholder:text-white/20 font-medium border-0 shadow-none focus-visible:ring-0 focus-visible:border-0"
               />
               <div class="flex items-center justify-end sm:justify-start gap-2 shrink-0">
@@ -51,7 +51,7 @@
                 </button>
                 <button
                   type="button"
-                  class="bg-[#E4405F] hover:bg-[#E4405F]/90 hover:scale-105 active:scale-95 transition-all text-white px-6 sm:px-10 py-3 sm:py-4 rounded-full font-heading font-black uppercase text-xs sm:text-sm tracking-widest shadow-lg shadow-[#E4405F]/30 disabled:opacity-60 disabled:cursor-not-allowed disabled:hover:scale-100"
+                  class="bg-[#1877F2] hover:bg-[#1877F2]/90 hover:scale-105 active:scale-95 transition-all text-white px-6 sm:px-10 py-3 sm:py-4 rounded-full font-heading font-black uppercase text-xs sm:text-sm tracking-widest shadow-lg shadow-[#1877F2]/30 disabled:opacity-60 disabled:cursor-not-allowed disabled:hover:scale-100"
                   :disabled="downloadLoading"
                   @click="onSearch"
                 >
@@ -89,8 +89,8 @@
             class="w-full aspect-4/5 bg-[#1A1A1A] rounded-xl sm:rounded-2xl border border-white/10 shadow-2xl overflow-hidden flex items-center justify-center"
           >
             <iconify-icon
-              icon="mdi:instagram"
-              class="text-[80px] sm:text-[100px] md:text-[120px] text-[#E4405F]/30"
+              icon="mdi:facebook"
+              class="text-[80px] sm:text-[100px] md:text-[120px] text-[#1877F2]/30"
             />
           </div>
         </div>
@@ -118,7 +118,7 @@
               />
             </div>
             <span class="text-white font-medium">Memuat...</span>
-            <span class="text-sm text-white/50">Mengambil data post</span>
+            <span class="text-sm text-white/50">Mengambil data video</span>
           </div>
         </div>
 
@@ -142,8 +142,7 @@
                   Ready for Download
                 </p>
                 <p class="text-white/60 text-xs">
-                  Your Instagram post/reel has been processed and is ready for
-                  saving.
+                  Video Facebook siap diunduh. Pilih kualitas lalu klik Download.
                 </p>
               </div>
             </div>
@@ -156,101 +155,33 @@
               <div
                 class="relative aspect-4/6 bg-[#1A1A1A] rounded-2xl sm:rounded-[2.5rem] overflow-hidden border border-white/10 shadow-2xl transition-transform group-hover:scale-[1.01]"
               >
-                <!-- Preview: foto / carousel (pakai proxy agar image tidak corrupt di browser) -->
-                <template v-if="videoInfo?.images?.length">
-                  <img
-                    :src="
-                      videoInfo.previewImageUrls?.[imageIndex] ||
-                      videoInfo.images[imageIndex]
-                    "
-                    alt="Preview"
-                    class="w-full h-full object-cover"
+                <img
+                  v-if="videoInfo.cover"
+                  :src="videoInfo.cover"
+                  alt="Preview"
+                  class="absolute inset-0 w-full h-full object-cover z-0"
+                />
+                <video
+                  v-if="(videoInfo.previewVideoUrl || videoInfo.videoUrl) && !videoLoadFailed"
+                  :src="videoInfo.previewVideoUrl || videoInfo.videoUrl"
+                  :poster="videoInfo.cover || undefined"
+                  class="absolute inset-0 w-full h-full object-cover z-[1]"
+                  controls
+                  muted
+                  loop
+                  playsinline
+                  preload="metadata"
+                  @error="videoLoadFailed = true"
+                />
+                <div
+                  v-if="!videoInfo.cover && (videoLoadFailed || !videoInfo.videoUrl)"
+                  class="absolute inset-0 flex items-center justify-center bg-neutral-800 z-0"
+                >
+                  <iconify-icon
+                    icon="lucide:video"
+                    class="text-white/20 text-5xl"
                   />
-                  <div
-                    v-if="videoInfo?.images && videoInfo.images.length > 1"
-                    class="absolute bottom-4 left-1/2 -translate-x-1/2 flex gap-2 z-10"
-                  >
-                    <button
-                      v-for="(_, i) in videoInfo?.images ?? []"
-                      :key="i"
-                      type="button"
-                      class="px-2.5 py-1 rounded-full text-xs font-medium transition-all"
-                      :class="
-                        imageIndex === i
-                          ? 'bg-white text-black'
-                          : 'bg-white/30 text-white/80'
-                      "
-                      @click.stop="imageIndex = i"
-                    >
-                      {{ Number(i) + 1 }}
-                    </button>
-                  </div>
-                  <button
-                    v-if="videoInfo?.images && videoInfo.images.length > 1"
-                    type="button"
-                    class="absolute left-3 top-1/2 -translate-y-1/2 w-11 h-11 rounded-full bg-black/50 flex items-center justify-center text-white z-10 transition-all hover:scale-110"
-                    :disabled="imageIndex === 0"
-                    @click.stop="imageIndex = Math.max(0, imageIndex - 1)"
-                  >
-                    <iconify-icon icon="lucide:chevron-left" class="text-xl" />
-                  </button>
-                  <button
-                    v-if="videoInfo?.images && videoInfo.images.length > 1"
-                    type="button"
-                    class="absolute right-3 top-1/2 -translate-y-1/2 w-11 h-11 rounded-full bg-black/50 flex items-center justify-center text-white z-10 transition-all hover:scale-110"
-                    :disabled="
-                      imageIndex >= (videoInfo?.images?.length ?? 0) - 1
-                    "
-                    @click.stop="
-                      imageIndex = Math.min(
-                        (videoInfo?.images?.length ?? 1) - 1,
-                        imageIndex + 1,
-                      )
-                    "
-                  >
-                    <iconify-icon icon="lucide:chevron-right" class="text-xl" />
-                  </button>
-                </template>
-                <!-- Preview: Reel/video — preview image (cover) + video (pakai proxy agar tidak corrupt) -->
-                <template v-else>
-                  <!-- Preview image (thumbnail/cover) — lewat proxy BE -->
-                  <img
-                    v-if="videoInfo.cover || videoInfo.previewImageUrls?.length"
-                    :src="videoInfo.previewImageUrls?.[0] || videoInfo.cover"
-                    alt="Preview Reel"
-                    class="absolute inset-0 w-full h-full object-cover z-0"
-                  />
-                  <!-- Video player di atas cover (user bisa putar) -->
-                  <video
-                    v-if="
-                      (videoInfo.previewVideoUrl || videoInfo.videoUrl) &&
-                      !videoLoadFailed
-                    "
-                    :src="videoInfo.previewVideoUrl || videoInfo.videoUrl"
-                    :poster="videoInfo.cover || undefined"
-                    class="absolute inset-0 w-full h-full object-cover z-1"
-                    controls
-                    muted
-                    loop
-                    playsinline
-                    preload="metadata"
-                    @error="videoLoadFailed = true"
-                  />
-                  <!-- Tanpa cover & tanpa video: placeholder -->
-                  <div
-                    v-if="
-                      !videoInfo.cover &&
-                      (videoLoadFailed || !videoInfo.videoUrl)
-                    "
-                    class="absolute inset-0 flex items-center justify-center bg-neutral-800 z-0"
-                  >
-                    <iconify-icon
-                      icon="lucide:image"
-                      class="text-white/20 text-5xl"
-                    />
-                  </div>
-                </template>
-                <!-- Gradient & play icon overlay -->
+                </div>
                 <div
                   class="absolute inset-0 bg-linear-to-t from-black/80 via-transparent to-transparent flex flex-col justify-end p-4 sm:p-8 pointer-events-none"
                 >
@@ -269,82 +200,94 @@
             <div class="lg:col-span-8 space-y-6 md:space-y-10">
               <div>
                 <div class="inline-flex items-center gap-3 mb-4 sm:mb-6">
-                  <div class="w-12 h-[2px] bg-[#E4405F]" />
+                  <div class="w-12 h-[2px] bg-[#1877F2]" />
                   <span
-                    class="uppercase tracking-[0.4em] text-xs font-heading font-black text-[#E4405F]"
-                    >Instagram Result</span
+                    class="uppercase tracking-[0.4em] text-xs font-heading font-black text-[#1877F2]"
+                    >Facebook Result</span
                   >
                 </div>
                 <h1
                   class="font-heading text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-black leading-tight mb-3 sm:mb-4"
                 >
-                  <template
-                    v-if="
-                      (videoInfo.text || 'Instagram Post').split(' ').length > 1
-                    "
-                  >
+                  <template v-if="(videoInfo.text || 'Facebook Video').split(' ').length > 1">
                     <span class="text-white">{{
-                      (videoInfo.text || "Instagram Post")
+                      (videoInfo.text || "Facebook Video")
                         .split(" ")
                         .slice(0, -1)
                         .join(" ")
                     }}</span>
-                    <span class="text-[#E4405F]">{{
-                      (videoInfo.text || "Instagram Post")
-                        .split(" ")
-                        .slice(-1)[0]
+                    <span class="text-[#1877F2]">{{
+                      (videoInfo.text || "Facebook Video").split(" ").slice(-1)[0]
                     }}</span>
                   </template>
-                  <span v-else class="text-[#E4405F]">{{
-                    videoInfo.text || "Instagram Post"
+                  <span v-else class="text-[#1877F2]">{{
+                    videoInfo.text || "Facebook Video"
                   }}</span>
                 </h1>
                 <div
+                  v-if="videoInfo.duration"
                   class="flex flex-wrap items-center gap-6 text-white/50 text-sm font-medium"
                 >
-                  <div v-if="videoInfo.author" class="flex items-center gap-2">
-                    <div
-                      class="w-8 h-8 rounded-full overflow-hidden bg-neutral-800 flex items-center justify-center"
-                    >
-                      <iconify-icon icon="lucide:user" class="text-white/60" />
-                    </div>
-                    <span class="text-white font-bold">{{
-                      videoInfo.author.startsWith("@")
-                        ? videoInfo.author
-                        : `@${videoInfo.author}`
-                    }}</span>
-                  </div>
+                  <span class="flex items-center gap-2">
+                    <iconify-icon icon="lucide:clock" class="text-white/60" />
+                    {{ videoInfo.duration }} detik
+                  </span>
+                </div>
+              </div>
+
+              <!-- Pilih kualitas -->
+              <div
+                v-if="videoInfo.qualities && videoInfo.qualities.length > 0"
+                class="space-y-3"
+              >
+                <label class="text-xs font-heading font-black uppercase tracking-widest text-white/50">
+                  Pilih kualitas
+                </label>
+                <div class="flex flex-wrap gap-2">
+                  <button
+                    v-for="(q, idx) in videoInfo.qualities"
+                    :key="idx"
+                    type="button"
+                    class="px-4 py-2.5 rounded-xl font-bold text-sm transition-all border"
+                    :class="
+                      selectedQualityIndex === idx
+                        ? 'bg-[#1877F2] border-[#1877F2] text-white'
+                        : 'glass-panel border-white/10 text-white/80 hover:border-[#1877F2]/50 hover:text-white'
+                    "
+                    @click="selectedQualityIndex = idx"
+                  >
+                    {{ q.label }}
+                  </button>
                 </div>
               </div>
 
               <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
+                <!-- Download Video (satu tombol, pakai kualitas terpilih) -->
                 <div
-                  v-if="
-                    videoInfo.videoUrl &&
-                    (!videoInfo.images || videoInfo.images.length === 0)
-                  "
+                  v-if="videoInfo.videoUrl || (videoInfo.qualities && videoInfo.qualities.length)"
                   class="space-y-3"
                 >
                   <button
                     type="button"
-                    class="w-full flex items-center justify-between bg-[#E4405F] hover:bg-[#E4405F]/90 text-white p-4 sm:p-6 rounded-2xl sm:rounded-3xl hover:shadow-[0_0_40px_rgba(228,64,95,0.3)] transition-all group disabled:opacity-60 disabled:cursor-not-allowed"
+                    class="w-full flex items-center justify-between bg-[#1877F2] hover:bg-[#1877F2]/90 text-white p-4 sm:p-6 rounded-2xl sm:rounded-3xl hover:shadow-[0_0_40px_rgba(24,119,242,0.3)] transition-all group disabled:opacity-60 disabled:cursor-not-allowed"
                     :disabled="downloadVideoLoading"
-                    @click="onDownloadVideo"
+                    @click="onDownloadVideo()"
                   >
                     <div class="flex flex-col min-w-0">
                       <span
                         class="font-heading font-black text-base sm:text-xl uppercase italic"
                       >
-                        {{
-                          downloadVideoLoading
-                            ? "Memproses..."
-                            : "Download Video"
-                        }}
+                        {{ downloadVideoLoading ? "Memproses..." : "Download Video" }}
                       </span>
                       <span
                         class="text-white/70 text-xs font-bold uppercase tracking-widest mt-1"
-                        >Format: MP4</span
                       >
+                        {{
+                          videoInfo.qualities?.length
+                            ? videoInfo.qualities[selectedQualityIndex]?.label ?? 'MP4'
+                            : 'Format: MP4'
+                        }}
+                      </span>
                     </div>
                     <div
                       class="w-12 h-12 sm:w-14 sm:h-14 bg-white/20 rounded-xl sm:rounded-2xl flex items-center justify-center group-hover:scale-110 transition-transform shrink-0"
@@ -352,42 +295,28 @@
                       <iconify-icon icon="lucide:download" class="text-xl sm:text-2xl" />
                     </div>
                   </button>
-                  <p
-                    class="text-center text-[10px] text-white/30 uppercase font-black tracking-widest"
-                  >
-                    Reel / video
+                  <p class="text-center text-[10px] text-white/30 uppercase font-black tracking-widest">
+                    Unduh dengan kualitas terpilih
                   </p>
                 </div>
 
-                <div
-                  v-if="videoInfo.images && videoInfo.images.length > 0"
-                  class="space-y-3"
-                >
+                <div v-if="videoInfo.cover" class="space-y-3">
                   <button
                     type="button"
                     class="w-full flex items-center justify-between glass-panel text-white p-4 sm:p-6 rounded-2xl sm:rounded-3xl hover:bg-white/10 transition-all group disabled:opacity-60 disabled:cursor-not-allowed"
-                    :disabled="downloadImagesLoading"
-                    @click="onDownloadImages"
+                    :disabled="downloadImageLoading"
+                    @click="onDownloadThumbnail"
                   >
                     <div class="flex flex-col min-w-0">
                       <span
                         class="font-heading font-black text-base sm:text-xl uppercase italic"
                       >
-                        {{
-                          downloadImagesLoading
-                            ? "Memproses..."
-                            : "Download Image"
-                        }}
+                        {{ downloadImageLoading ? "Memproses..." : "Download Thumbnail" }}
                       </span>
                       <span
                         class="text-white/70 text-xs font-bold uppercase tracking-widest mt-1"
+                        >JPG / WEBP</span
                       >
-                        {{
-                          (videoInfo?.images?.length ?? 0) > 1
-                            ? `${imageIndex + 1} of ${videoInfo?.images?.length ?? 0}`
-                            : "JPG/WEBP"
-                        }}
-                      </span>
                     </div>
                     <div
                       class="w-12 h-12 sm:w-14 sm:h-14 bg-white/5 rounded-xl sm:rounded-2xl flex items-center justify-center group-hover:scale-110 transition-transform shrink-0"
@@ -395,57 +324,17 @@
                       <iconify-icon icon="lucide:image" class="text-xl sm:text-2xl" />
                     </div>
                   </button>
-                  <p
-                    class="text-center text-[10px] text-white/30 uppercase font-black tracking-widest"
-                  >
-                    Foto / carousel
+                  <p class="text-center text-[10px] text-white/30 uppercase font-black tracking-widest">
+                    Gambar sampul
                   </p>
                 </div>
-              </div>
 
-              <div
-                v-if="videoInfo.videoUrl && videoInfo.images?.length"
-                class="pt-6 sm:pt-8 border-t border-white/5"
-              >
-                <div class="flex items-center gap-3 sm:gap-4 mb-4 sm:mb-6">
-                  <h3
-                    class="text-sm font-heading font-black uppercase tracking-widest text-white/40"
-                  >
-                    More Options
-                  </h3>
-                  <div class="flex-1 h-px bg-white/5" />
-                </div>
-                <div class="flex flex-wrap gap-3 sm:gap-4">
-                  <button
-                    v-if="videoInfo.images && videoInfo.images.length > 0"
-                    type="button"
-                    class="px-4 sm:px-6 py-3 sm:py-4 glass-panel rounded-xl sm:rounded-2xl flex items-center gap-2 sm:gap-3 hover:border-[#E4405F]/30 transition-all disabled:opacity-60"
-                    :disabled="downloadImagesLoading"
-                    @click="onDownloadImages"
-                  >
-                    <iconify-icon icon="lucide:image" class="text-[#E4405F]" />
-                    <span class="text-xs sm:text-sm font-bold">Download Image</span>
-                  </button>
-                  <button
-                    v-if="videoInfo.videoUrl"
-                    type="button"
-                    class="px-4 sm:px-6 py-3 sm:py-4 glass-panel rounded-xl sm:rounded-2xl flex items-center gap-2 sm:gap-3 hover:border-[#E4405F]/30 transition-all disabled:opacity-60"
-                    :disabled="downloadVideoLoading"
-                    @click="onDownloadVideo"
-                  >
-                    <iconify-icon
-                      icon="lucide:download"
-                      class="text-[#E4405F]"
-                    />
-                    <span class="text-xs sm:text-sm font-bold">Download Video</span>
-                  </button>
-                </div>
               </div>
 
               <div class="pt-4">
                 <button
                   type="button"
-                  class="inline-flex items-center gap-3 text-[#E4405F] font-heading font-black uppercase text-sm tracking-widest hover:translate-x-2 transition-transform"
+                  class="inline-flex items-center gap-3 text-[#1877F2] font-heading font-black uppercase text-sm tracking-widest hover:translate-x-2 transition-transform"
                   @click="onDownloadAnother"
                 >
                   <iconify-icon icon="lucide:arrow-left" class="text-lg" />
@@ -468,21 +357,20 @@
         <h2
           class="font-heading text-2xl sm:text-3xl md:text-4xl font-black uppercase italic"
         >
-          Recent <span class="text-[#E4405F]">History</span>
+          Recent <span class="text-[#1877F2]">History</span>
         </h2>
         <p class="text-white/30 text-xs sm:text-sm mt-1 sm:mt-2">
-          Your lately processed Instagram downloads
+          Riwayat unduhan Facebook Anda
         </p>
       </div>
       <button
         type="button"
-        class="text-[#E4405F] font-heading font-black uppercase text-xs tracking-widest hover:text-white transition-colors"
+        class="text-[#1877F2] font-heading font-black uppercase text-xs tracking-widest hover:text-white transition-colors"
         @click="clearHistory"
       >
         Clear History
       </button>
     </div>
-    <!-- Skeleton saat history belum di-load dari localStorage (hindari flash "tidak ada history") -->
     <div
       v-if="!historyReady"
       class="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-5 gap-4 sm:gap-6"
@@ -504,17 +392,17 @@
       class="border-white/5 py-4 md:py-16 text-white/30 flex flex-col text-center items-center justify-center gap-4"
     >
       <EmptyHeader>
-        <iconify-icon icon="lucide:history" class="text-4xl text-[#E4405F]" />
+        <iconify-icon icon="lucide:history" class="text-4xl text-[#1877F2]" />
       </EmptyHeader>
       <EmptyContent>
-        Belum ada riwayat. Isi link Instagram lalu klik Download untuk menambah.
+        Belum ada riwayat. Isi link Facebook lalu klik Download untuk menambah.
       </EmptyContent>
     </Empty>
     <div v-else class="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-5 gap-4 sm:gap-6">
       <div
         v-for="item in historyItems ?? []"
         :key="item.id"
-        class="group relative glass-panel rounded-2xl overflow-hidden hover:border-[#E4405F]/50 transition-all"
+        class="group relative glass-panel rounded-2xl overflow-hidden hover:border-[#1877F2]/50 transition-all"
       >
         <div class="aspect-4/5 bg-neutral-900 relative">
           <img
@@ -537,12 +425,12 @@
             class="absolute inset-0 hidden items-center justify-center bg-neutral-800"
             aria-hidden="true"
           >
-            <iconify-icon icon="lucide:image" class="text-white/20 text-4xl" />
+            <iconify-icon icon="lucide:video" class="text-white/20 text-4xl" />
           </div>
         </div>
         <div class="p-3 sm:p-4">
           <p
-            class="text-[10px] font-heading font-black uppercase tracking-tighter text-[#E4405F]"
+            class="text-[10px] font-heading font-black uppercase tracking-tighter text-[#1877F2]"
           >
             {{ item.type }}
           </p>
@@ -550,7 +438,7 @@
         </div>
         <button
           type="button"
-          class="absolute top-2 right-2 w-8 h-8 bg-black/60 rounded-full flex items-center justify-center hover:bg-[#E4405F] transition-all opacity-0 group-hover:opacity-100 touch-manipulation"
+          class="absolute top-2 right-2 w-8 h-8 bg-black/60 rounded-full flex items-center justify-center hover:bg-[#1877F2] transition-all opacity-0 group-hover:opacity-100 touch-manipulation"
           title="Buka & download lagi"
           @click="openHistoryItem(item)"
         >
@@ -563,18 +451,18 @@
 
 <script setup lang="ts">
 import { toast } from "vue-sonner";
-import { useStateInstagram } from "~/services/useStateInstagram";
+import { useStateFacebook } from "~/services/useStateFacebook";
 import { Empty, EmptyHeader, EmptyContent } from "~/components/ui/empty";
 
 const {
   videoUrl,
+  selectedQualityIndex,
   downloadLoading,
   downloadError,
   downloadVideoLoading,
-  downloadImagesLoading,
+  downloadImageLoading,
   videoLoadFailed,
   videoInfo,
-  imageIndex,
   historyItems,
   historyReady,
   clearHistory,
@@ -582,9 +470,9 @@ const {
   getHistoryPreviewUrl,
   onSearch,
   onDownloadVideo,
-  onDownloadImages,
+  onDownloadThumbnail,
   onDownloadAnother,
-} = useStateInstagram();
+} = useStateFacebook();
 
 const onPaste = async () => {
   try {
