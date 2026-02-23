@@ -1,5 +1,6 @@
 /// <reference types="node" />
 import tailwindcss from '@tailwindcss/vite'
+import { createLogger } from 'vite'
 
 export default defineNuxtConfig({
   compatibilityDate: '2025-07-15',
@@ -49,5 +50,18 @@ export default defineNuxtConfig({
   },
   vite: {
     plugins: [tailwindcss() as unknown as Plugin],
+    build: {
+      cssSourceMap: false,
+    },
+    customLogger: (() => {
+      const defaultLogger = createLogger()
+      return {
+        ...defaultLogger,
+        warn: (msg: string, opts?: { timestamp?: boolean }) => {
+          if (typeof msg === 'string' && msg.includes('@tailwindcss/vite') && msg.includes('Sourcemap')) return
+          defaultLogger.warn(msg, opts)
+        },
+      }
+    })(),
   },
 })

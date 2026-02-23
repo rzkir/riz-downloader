@@ -26,6 +26,13 @@ function saveHistoryToStorage(items: HistoryItem[]) {
 }
 
 function buildVideoInfo(data: FacebookMetadataResponse, baseUrl: string, url: string): VideoInfo {
+    const imageCount = data.images?.length ?? (data.thumbnail ? 1 : 0);
+    const previewImageUrls =
+        imageCount > 0
+            ? Array.from({ length: imageCount }, (_, i) =>
+                  `${baseUrl}/api/${PLATFORM}/preview-image?url=${encodeURIComponent(url)}&index=${i}`,
+              )
+            : undefined;
     return {
         videoUrl: data.videoUrl ?? undefined,
         videoUrlHd: data.videoUrlHd ?? undefined,
@@ -34,6 +41,8 @@ function buildVideoInfo(data: FacebookMetadataResponse, baseUrl: string, url: st
             ? `${baseUrl}/api/${PLATFORM}/preview-video?url=${encodeURIComponent(url)}`
             : undefined,
         cover: data.thumbnail ?? undefined,
+        images: data.images?.length ? data.images : undefined,
+        previewImageUrls,
         text: data.title ?? undefined,
         author: undefined,
         duration: data.duration ?? undefined,
@@ -56,6 +65,7 @@ interface FacebookMetadataResponse {
     videoUrlHd?: string | null;
     qualities?: FacebookQualityOption[] | null;
     thumbnail?: string | null;
+    images?: string[] | null;
 }
 
 export function useStateFacebook() {
@@ -65,6 +75,7 @@ export function useStateFacebook() {
     const videoUrl = ref("");
     const searchUrl = ref("");
     const selectedQualityIndex = ref(0);
+    const imageIndex = ref(0);
     const videoLoadFailed = ref(false);
     const historyItems = ref<HistoryItem[]>([]);
     const historyReady = ref(false);
@@ -107,6 +118,7 @@ export function useStateFacebook() {
                 title: data.title ?? undefined,
                 thumbnail: data.thumbnail ?? undefined,
                 videoUrl: data.videoUrl ?? undefined,
+                images: data.images ?? undefined,
             });
     });
 
@@ -125,15 +137,16 @@ export function useStateFacebook() {
     });
 
     const downloadImageMutation = useMutation({
-        mutationFn: async (url: string) => {
+        mutationFn: async ({ url, index = 0 }: { url: string; index?: number }) => {
             const res = await fetch(
-                `${baseUrl}/api/${PLATFORM}/download-image?url=${encodeURIComponent(url)}`,
+                `${baseUrl}/api/${PLATFORM}/download-image?url=${encodeURIComponent(url)}&index=${index}`,
             );
-            if (!res.ok) throw new Error("Gagal unduh thumbnail");
+            if (!res.ok) throw new Error("Gagal unduh gambar");
             return res.blob();
         },
-        onSuccess(blob: Blob) {
-            triggerBlobDownload(blob, "facebook_thumbnail.jpg");
+        onSuccess(blob: Blob, variables: { url: string; index?: number }) {
+            const idx = variables.index ?? 0;
+            triggerBlobDownload(blob, `facebook_${idx + 1}.jpg`);
         },
     });
 
@@ -164,14 +177,15 @@ export function useStateFacebook() {
 
     function addToHistory(
         url: string,
-        data: { title?: string; thumbnail?: string; videoUrl?: string },
+        data: { title?: string; thumbnail?: string; videoUrl?: string; images?: string[] },
     ) {
+        const type: HistoryItem["type"] = data.videoUrl ? "Video" : data.images?.length || data.thumbnail ? "Image" : "Video";
         const item: HistoryItem = {
             id: `${Date.now()}-${url.slice(-16).replace(/\W/g, "")}`,
             url,
-            title: data.title?.slice(0, 80) || "Facebook Video",
-            cover: data.thumbnail || "",
-            type: "Video",
+            title: data.title?.slice(0, 80) || (type === "Image" ? "Facebook Photo" : "Facebook Video"),
+            cover: data.thumbnail || data.images?.[0] || "",
+            type,
             date: Date.now(),
         };
         const list = [item, ...historyItems.value.filter((i: HistoryItem) => i.url !== url)].slice(
@@ -191,6 +205,7 @@ export function useStateFacebook() {
         videoUrl.value = item.url;
         searchUrl.value = item.url;
         selectedQualityIndex.value = 0;
+        imageIndex.value = 0;
         videoLoadFailed.value = false;
     }
 
@@ -211,6 +226,7 @@ export function useStateFacebook() {
         const url = videoUrl.value.trim();
         if (!url) return;
         selectedQualityIndex.value = 0;
+        imageIndex.value = 0;
         videoLoadFailed.value = false;
         downloadVideoMutation.reset();
         downloadImageMutation.reset();
@@ -227,7 +243,7 @@ export function useStateFacebook() {
     function onDownloadThumbnail() {
         const url = searchUrl.value.trim();
         if (!url) return;
-        downloadImageMutation.mutate(url);
+        downloadImageMutation.mutate({ url, index: imageIndex.value });
     }
 
     function onDownloadAudio() {
@@ -246,6 +262,7 @@ export function useStateFacebook() {
     return {
         videoUrl,
         selectedQualityIndex,
+        imageIndex,
         downloadLoading,
         downloadError,
         downloadVideoLoading,

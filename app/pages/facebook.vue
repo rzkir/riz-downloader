@@ -7,7 +7,9 @@
     </div>
 
     <div class="container mx-auto px-4 sm:px-6 relative z-10">
-      <div class="grid lg:grid-cols-2 gap-8 lg:gap-12 items-center pt-8 pb-10 sm:pt-10 sm:pb-12 md:pt-12 md:pb-16">
+      <div
+        class="grid lg:grid-cols-2 gap-8 lg:gap-12 items-center pt-8 pb-10 sm:pt-10 sm:pb-12 md:pt-12 md:pb-16"
+      >
         <div class="order-2 lg:order-1">
           <div class="mb-6 inline-flex items-center gap-3">
             <div class="w-12 h-[2px] bg-[#1877F2]" />
@@ -25,21 +27,26 @@
           </h1>
 
           <p class="text-white/50 text-base sm:text-lg max-w-lg mb-8 sm:mb-12">
-            Download video dari Facebook &amp; fb.watch. Tempel link video publik
-            dan unduh dalam hitungan detik.
+            Download video dari Facebook &amp; fb.watch. Tempel link video
+            publik dan unduh dalam hitungan detik.
           </p>
 
-          <div id="download-input" class="relative w-full max-w-2xl mb-8 sm:mb-12">
+          <div
+            id="download-input"
+            class="relative w-full max-w-2xl mb-8 sm:mb-12"
+          >
             <div
               class="bg-[#1A1A1A] p-2 sm:p-3 rounded-2xl sm:rounded-full flex flex-col sm:flex-row items-stretch sm:items-center gap-2 sm:gap-0 border border-white/5 shadow-2xl shadow-black/40 focus-within:border-[#1877F2]/50 transition-all"
             >
               <UiInput
                 v-model="videoUrl"
                 type="text"
-                placeholder="Insert Facebook / fb.watch / Story Link Here..."
+                placeholder="Insert link: fb.watch, facebook.com/watch, atau facebook.com/share/p/..."
                 class="bg-transparent flex-1 min-w-0 py-3 sm:py-4 pl-4 sm:pl-5 text-sm sm:text-base text-white outline-none placeholder:text-white/20 font-medium border-0 shadow-none focus-visible:ring-0 focus-visible:border-0"
               />
-              <div class="flex items-center justify-end sm:justify-start gap-2 shrink-0">
+              <div
+                class="flex items-center justify-end sm:justify-start gap-2 shrink-0"
+              >
                 <button
                   type="button"
                   class="flex items-center gap-2 px-3 sm:px-4 py-3 sm:py-4 rounded-full text-white/70 hover:text-white hover:bg-white/5 transition-all shrink-0"
@@ -47,7 +54,10 @@
                   @click="onPaste"
                 >
                   <iconify-icon icon="lucide:clipboard-paste" class="text-lg" />
-                  <span class="text-xs font-heading font-black uppercase tracking-widest hidden sm:inline">Tempel</span>
+                  <span
+                    class="text-xs font-heading font-black uppercase tracking-widest hidden sm:inline"
+                    >Tempel</span
+                  >
                 </button>
                 <button
                   type="button"
@@ -142,7 +152,15 @@
                   Ready for Download
                 </p>
                 <p class="text-white/60 text-xs">
-                  Video Facebook siap diunduh. Pilih kualitas lalu klik Download.
+                  <template v-if="videoInfo.videoUrl || (videoInfo.qualities && videoInfo.qualities.length)">
+                    Video Facebook siap diunduh. Pilih kualitas lalu klik Download.
+                  </template>
+                  <template v-else-if="videoInfo.previewImageUrls?.length">
+                    Foto Facebook siap diunduh. Pilih gambar lalu klik Download Foto.
+                  </template>
+                  <template v-else>
+                    Video atau foto siap diunduh.
+                  </template>
                 </p>
               </div>
             </div>
@@ -151,21 +169,34 @@
           <div
             class="relative z-10 grid lg:grid-cols-12 gap-6 md:gap-8 lg:gap-12 items-start results-enter"
           >
-            <div class="lg:col-span-4 group max-w-[280px] mx-auto lg:max-w-none lg:mx-0">
+            <div
+              class="lg:col-span-4 group max-w-[280px] mx-auto lg:max-w-none lg:mx-0"
+            >
               <div
                 class="relative aspect-4/6 bg-[#1A1A1A] rounded-2xl sm:rounded-[2.5rem] overflow-hidden border border-white/10 shadow-2xl transition-transform group-hover:scale-[1.01]"
               >
+                <!-- Cover / image fallback (poster or single image) -->
                 <img
-                  v-if="videoInfo.cover"
+                  v-if="videoInfo.cover && !(videoInfo.previewImageUrls?.length && !videoInfo.previewVideoUrl && !videoInfo.videoUrl)"
                   :src="videoInfo.cover"
                   alt="Preview"
                   class="absolute inset-0 w-full h-full object-cover z-0"
                 />
+                <!-- Photo post: show selected image by index -->
+                <img
+                  v-if="videoInfo.previewImageUrls?.length && !videoInfo.previewVideoUrl && !videoInfo.videoUrl"
+                  :src="videoInfo.previewImageUrls[imageIndex]"
+                  alt="Preview"
+                  class="absolute inset-0 w-full h-full object-cover z-0"
+                />
                 <video
-                  v-if="(videoInfo.previewVideoUrl || videoInfo.videoUrl) && !videoLoadFailed"
+                  v-if="
+                    (videoInfo.previewVideoUrl || videoInfo.videoUrl) &&
+                    !videoLoadFailed
+                  "
                   :src="videoInfo.previewVideoUrl || videoInfo.videoUrl"
                   :poster="videoInfo.cover || undefined"
-                  class="absolute inset-0 w-full h-full object-cover z-[1]"
+                  class="absolute inset-0 w-full h-full object-cover z-1"
                   controls
                   muted
                   loop
@@ -174,7 +205,9 @@
                   @error="videoLoadFailed = true"
                 />
                 <div
-                  v-if="!videoInfo.cover && (videoLoadFailed || !videoInfo.videoUrl)"
+                  v-if="
+                    !videoInfo.cover && !videoInfo.previewImageUrls?.length && (videoLoadFailed || !videoInfo.videoUrl)
+                  "
                   class="absolute inset-0 flex items-center justify-center bg-neutral-800 z-0"
                 >
                   <iconify-icon
@@ -182,7 +215,9 @@
                     class="text-white/20 text-5xl"
                   />
                 </div>
+                <!-- Gradient + play icon only when video -->
                 <div
+                  v-if="videoInfo.previewVideoUrl || videoInfo.videoUrl"
                   class="absolute inset-0 bg-linear-to-t from-black/80 via-transparent to-transparent flex flex-col justify-end p-4 sm:p-8 pointer-events-none"
                 >
                   <div
@@ -193,6 +228,21 @@
                       class="text-white text-xl sm:text-2xl ml-1"
                     />
                   </div>
+                </div>
+                <!-- Carousel dots for multiple images -->
+                <div
+                  v-if="(videoInfo.previewImageUrls?.length ?? 0) > 1"
+                  class="absolute bottom-3 left-0 right-0 z-10 flex justify-center gap-1.5"
+                >
+                  <button
+                    v-for="(_, i) in videoInfo.previewImageUrls"
+                    :key="i"
+                    type="button"
+                    class="w-2 h-2 rounded-full transition-all"
+                    :class="imageIndex === i ? 'bg-[#1877F2] scale-125' : 'bg-white/40 hover:bg-white/60'"
+                    :aria-label="`Gambar ${i + 1}`"
+                    @click="imageIndex = i"
+                  />
                 </div>
               </div>
             </div>
@@ -209,7 +259,11 @@
                 <h1
                   class="font-heading text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-black leading-tight mb-3 sm:mb-4"
                 >
-                  <template v-if="(videoInfo.text || 'Facebook Video').split(' ').length > 1">
+                  <template
+                    v-if="
+                      (videoInfo.text || 'Facebook Video').split(' ').length > 1
+                    "
+                  >
                     <span class="text-white">{{
                       (videoInfo.text || "Facebook Video")
                         .split(" ")
@@ -217,7 +271,9 @@
                         .join(" ")
                     }}</span>
                     <span class="text-[#1877F2]">{{
-                      (videoInfo.text || "Facebook Video").split(" ").slice(-1)[0]
+                      (videoInfo.text || "Facebook Video")
+                        .split(" ")
+                        .slice(-1)[0]
                     }}</span>
                   </template>
                   <span v-else class="text-[#1877F2]">{{
@@ -225,7 +281,7 @@
                   }}</span>
                 </h1>
                 <div
-                  v-if="videoInfo.duration"
+                  v-if="videoInfo.duration && (videoInfo.videoUrl || videoInfo.qualities?.length)"
                   class="flex flex-wrap items-center gap-6 text-white/50 text-sm font-medium"
                 >
                   <span class="flex items-center gap-2">
@@ -240,7 +296,9 @@
                 v-if="videoInfo.qualities && videoInfo.qualities.length > 0"
                 class="space-y-3"
               >
-                <label class="text-xs font-heading font-black uppercase tracking-widest text-white/50">
+                <label
+                  class="text-xs font-heading font-black uppercase tracking-widest text-white/50"
+                >
                   Pilih kualitas
                 </label>
                 <div class="flex flex-wrap gap-2">
@@ -261,10 +319,15 @@
                 </div>
               </div>
 
-              <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
+              <div
+                class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6"
+              >
                 <!-- Download Video (satu tombol, pakai kualitas terpilih) -->
                 <div
-                  v-if="videoInfo.videoUrl || (videoInfo.qualities && videoInfo.qualities.length)"
+                  v-if="
+                    videoInfo.videoUrl ||
+                    (videoInfo.qualities && videoInfo.qualities.length)
+                  "
                   class="space-y-3"
                 >
                   <button
@@ -277,30 +340,40 @@
                       <span
                         class="font-heading font-black text-base sm:text-xl uppercase italic"
                       >
-                        {{ downloadVideoLoading ? "Memproses..." : "Download Video" }}
+                        {{
+                          downloadVideoLoading
+                            ? "Memproses..."
+                            : "Download Video"
+                        }}
                       </span>
                       <span
                         class="text-white/70 text-xs font-bold uppercase tracking-widest mt-1"
                       >
                         {{
                           videoInfo.qualities?.length
-                            ? videoInfo.qualities[selectedQualityIndex]?.label ?? 'MP4'
-                            : 'Format: MP4'
+                            ? (videoInfo.qualities[selectedQualityIndex]
+                                ?.label ?? "MP4")
+                            : "Format: MP4"
                         }}
                       </span>
                     </div>
                     <div
                       class="w-12 h-12 sm:w-14 sm:h-14 bg-white/20 rounded-xl sm:rounded-2xl flex items-center justify-center group-hover:scale-110 transition-transform shrink-0"
                     >
-                      <iconify-icon icon="lucide:download" class="text-xl sm:text-2xl" />
+                      <iconify-icon
+                        icon="lucide:download"
+                        class="text-xl sm:text-2xl"
+                      />
                     </div>
                   </button>
-                  <p class="text-center text-[10px] text-white/30 uppercase font-black tracking-widest">
+                  <p
+                    class="text-center text-[10px] text-white/30 uppercase font-black tracking-widest"
+                  >
                     Unduh dengan kualitas terpilih
                   </p>
                 </div>
 
-                <div v-if="videoInfo.cover" class="space-y-3">
+                <div v-if="videoInfo.cover || videoInfo.previewImageUrls?.length" class="space-y-3">
                   <button
                     type="button"
                     class="w-full flex items-center justify-between glass-panel text-white p-4 sm:p-6 rounded-2xl sm:rounded-3xl hover:bg-white/10 transition-all group disabled:opacity-60 disabled:cursor-not-allowed"
@@ -311,7 +384,15 @@
                       <span
                         class="font-heading font-black text-base sm:text-xl uppercase italic"
                       >
-                        {{ downloadImageLoading ? "Memproses..." : "Download Thumbnail" }}
+                        {{
+                          downloadImageLoading
+                            ? "Memproses..."
+                            : (videoInfo.videoUrl || videoInfo.qualities?.length)
+                              ? "Download Thumbnail"
+                              : (videoInfo.previewImageUrls?.length ?? 0) > 1
+                                ? `Download Foto (${imageIndex + 1}/${videoInfo.previewImageUrls?.length})`
+                                : "Download Foto"
+                        }}
                       </span>
                       <span
                         class="text-white/70 text-xs font-bold uppercase tracking-widest mt-1"
@@ -321,14 +402,18 @@
                     <div
                       class="w-12 h-12 sm:w-14 sm:h-14 bg-white/5 rounded-xl sm:rounded-2xl flex items-center justify-center group-hover:scale-110 transition-transform shrink-0"
                     >
-                      <iconify-icon icon="lucide:image" class="text-xl sm:text-2xl" />
+                      <iconify-icon
+                        icon="lucide:image"
+                        class="text-xl sm:text-2xl"
+                      />
                     </div>
                   </button>
-                  <p class="text-center text-[10px] text-white/30 uppercase font-black tracking-widest">
-                    Gambar sampul
+                  <p
+                    class="text-center text-[10px] text-white/30 uppercase font-black tracking-widest"
+                  >
+                    {{ (videoInfo.videoUrl || videoInfo.qualities?.length) ? "Gambar sampul" : "Gambar saat ini" }}
                   </p>
                 </div>
-
               </div>
 
               <div class="pt-4">
@@ -352,7 +437,9 @@
   <section
     class="container mx-auto px-4 sm:px-6 py-8 sm:py-10 md:py-24 border-t border-white/5"
   >
-    <div class="flex items-center justify-between mb-8 sm:mb-12 flex-wrap gap-4">
+    <div
+      class="flex items-center justify-between mb-8 sm:mb-12 flex-wrap gap-4"
+    >
       <div>
         <h2
           class="font-heading text-2xl sm:text-3xl md:text-4xl font-black uppercase italic"
@@ -398,7 +485,10 @@
         Belum ada riwayat. Isi link Facebook lalu klik Download untuk menambah.
       </EmptyContent>
     </Empty>
-    <div v-else class="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-5 gap-4 sm:gap-6">
+    <div
+      v-else
+      class="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-5 gap-4 sm:gap-6"
+    >
       <div
         v-for="item in historyItems ?? []"
         :key="item.id"
@@ -457,6 +547,7 @@ import { Empty, EmptyHeader, EmptyContent } from "~/components/ui/empty";
 const {
   videoUrl,
   selectedQualityIndex,
+  imageIndex,
   downloadLoading,
   downloadError,
   downloadVideoLoading,
@@ -484,7 +575,9 @@ const onPaste = async () => {
       toast.error("Clipboard kosong atau bukan teks");
     }
   } catch {
-    toast.error("Akses clipboard ditolak. Izinkan akses atau tempel manual (Ctrl+V)");
+    toast.error(
+      "Akses clipboard ditolak. Izinkan akses atau tempel manual (Ctrl+V)",
+    );
   }
 };
 </script>
