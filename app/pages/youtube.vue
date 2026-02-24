@@ -10,7 +10,9 @@
 
     <div class="container mx-auto px-4 sm:px-6 relative z-10">
       <!-- Hero: Grid Layout -->
-      <div class="grid lg:grid-cols-2 gap-8 lg:gap-12 items-center pt-8 pb-10 sm:pt-10 sm:pb-12 md:pt-12 md:pb-16">
+      <div
+        class="grid lg:grid-cols-2 gap-8 lg:gap-12 items-center pt-8 pb-10 sm:pt-10 sm:pb-12 md:pt-12 md:pb-16"
+      >
         <!-- Left: Content & Input -->
         <div class="order-2 lg:order-1">
           <div class="mb-6 inline-flex items-center gap-3">
@@ -29,12 +31,15 @@
           </h1>
 
           <p class="text-white/50 text-base sm:text-lg max-w-lg mb-8 sm:mb-12">
-            Paste any public YouTube video link and download the video or audio in
-            seconds.
+            Paste any public YouTube video link and download the video or audio
+            in seconds.
           </p>
 
           <!-- Input Group -->
-          <div id="download-input" class="relative w-full max-w-2xl mb-8 sm:mb-12">
+          <div
+            id="download-input"
+            class="relative w-full max-w-2xl mb-8 sm:mb-12"
+          >
             <div
               class="bg-[#1A1A1A] p-2 sm:p-3 rounded-2xl sm:rounded-full flex flex-col sm:flex-row items-stretch sm:items-center gap-2 sm:gap-0 border border-white/5 shadow-2xl shadow-black/40 focus-within:border-[#FF0000]/50 transition-all"
             >
@@ -44,7 +49,9 @@
                 placeholder="Insert YouTube Video Link Here..."
                 class="bg-transparent flex-1 min-w-0 py-3 sm:py-4 pl-4 sm:pl-5 text-sm sm:text-base text-white outline-none placeholder:text-white/20 font-medium border-0 shadow-none focus-visible:ring-0 focus-visible:border-0"
               />
-              <div class="flex items-center justify-end sm:justify-start gap-2 shrink-0">
+              <div
+                class="flex items-center justify-end sm:justify-start gap-2 shrink-0"
+              >
                 <button
                   type="button"
                   class="flex items-center gap-2 px-3 sm:px-4 py-3 sm:py-4 rounded-full text-white/70 hover:text-white hover:bg-white/5 transition-all shrink-0"
@@ -130,7 +137,9 @@
               </div>
               <div class="p-4 sm:p-6 md:p-8">
                 <div class="w-2/3 h-3 sm:h-4 bg-white/5 rounded mb-2 sm:mb-4" />
-                <div class="w-full h-8 sm:h-12 bg-white/5 rounded-full mb-4 sm:mb-8" />
+                <div
+                  class="w-full h-8 sm:h-12 bg-white/5 rounded-full mb-4 sm:mb-8"
+                />
                 <div class="grid grid-cols-2 gap-2 sm:gap-4">
                   <div
                     class="h-16 sm:h-24 md:h-32 bg-[#FF0000]/10 rounded-lg sm:rounded-xl border border-[#FF0000]/20"
@@ -166,7 +175,9 @@
             </div>
           </div>
 
-          <div class="absolute -top-2 right-4 sm:right-10 floating-emoji hidden sm:block">
+          <div
+            class="absolute -top-2 right-4 sm:right-10 floating-emoji hidden sm:block"
+          >
             <iconify-icon icon="noto:sparkles" class="text-3xl md:text-4xl" />
           </div>
           <div
@@ -236,13 +247,18 @@
             class="relative z-10 grid lg:grid-cols-12 gap-6 md:gap-8 lg:gap-12 items-start results-enter"
           >
             <!-- Video Preview -->
-            <div class="lg:col-span-4 group max-w-[280px] mx-auto lg:max-w-none lg:mx-0">
+            <div
+              class="lg:col-span-4 group max-w-[280px] mx-auto lg:max-w-none lg:mx-0"
+            >
               <div
                 class="relative aspect-16/9 bg-[#1A1A1A] rounded-2xl sm:rounded-[2.5rem] overflow-hidden border border-white/10 shadow-2xl transition-transform group-hover:scale-[1.01]"
               >
                 <video
-                  v-if="(videoInfo.previewVideoUrl || videoInfo.videoUrl) && !videoLoadFailed"
-                  :src="videoInfo.previewVideoUrl || videoInfo.videoUrl"
+                  v-if="
+                    (effectivePreviewVideoUrl || videoInfo.videoUrl) &&
+                    !videoLoadFailed
+                  "
+                  :src="effectivePreviewVideoUrl || videoInfo.videoUrl"
                   :poster="videoInfo.cover || undefined"
                   class="w-full h-full object-cover"
                   controls
@@ -287,7 +303,9 @@
                   class="font-heading text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-black leading-tight mb-3 sm:mb-4"
                 >
                   <template
-                    v-if="(videoInfo.text || 'YouTube Video').split(' ').length > 1"
+                    v-if="
+                      (videoInfo.text || 'YouTube Video').split(' ').length > 1
+                    "
                   >
                     <span class="text-white"
                       >{{
@@ -298,7 +316,9 @@
                       }}
                     </span>
                     <span class="text-[#FF0000]">{{
-                      (videoInfo.text || "YouTube Video").split(" ").slice(-1)[0]
+                      (videoInfo.text || "YouTube Video")
+                        .split(" ")
+                        .slice(-1)[0]
                     }}</span>
                   </template>
                   <span v-else class="text-[#FF0000]">{{
@@ -308,21 +328,56 @@
                 <div
                   class="flex flex-wrap items-center gap-6 text-white/50 text-sm font-medium"
                 >
-                  <div v-if="videoInfo.duration" class="flex items-center gap-2">
+                  <div
+                    v-if="videoInfo.duration"
+                    class="flex items-center gap-2"
+                  >
                     <iconify-icon icon="lucide:clock" class="text-white/60" />
                     <span>{{ videoInfo.duration }}s</span>
+                  </div>
+                </div>
+
+                <!-- Resolution selector -->
+                <div
+                  v-if="
+                    videoInfo.formatOptions && videoInfo.formatOptions.length
+                  "
+                  class="space-y-2"
+                >
+                  <label
+                    class="text-xs uppercase font-heading font-black text-white/50 tracking-widest"
+                  >
+                    Resolusi video
+                  </label>
+                  <div class="flex flex-wrap gap-2">
+                    <button
+                      v-for="opt in videoInfo.formatOptions"
+                      :key="opt.index"
+                      type="button"
+                      class="px-4 py-2 rounded-xl text-sm font-heading font-black uppercase tracking-wider transition-all"
+                      :class="
+                        selectedFormatIndex === opt.index
+                          ? 'bg-[#FF0000] text-white'
+                          : 'bg-white/10 text-white/80 hover:bg-white/15'
+                      "
+                      @click="selectedFormatIndex = opt.index"
+                    >
+                      {{ opt.label }}
+                    </button>
                   </div>
                 </div>
               </div>
 
               <!-- Download Buttons -->
-              <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
+              <div
+                class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6"
+              >
                 <div class="space-y-3">
                   <button
                     type="button"
                     class="w-full flex items-center justify-between bg-[#FF0000] hover:bg-[#FF0000]/90 text-white p-4 sm:p-6 rounded-2xl sm:rounded-3xl hover:shadow-[0_0_40px_rgba(255,0,0,0.4)] transition-all group disabled:opacity-60 disabled:cursor-not-allowed"
-                    :disabled="downloadVideoLoading"
-                    @click="onDownloadVideo"
+                    :disabled="downloadVideoLoading || (showDownloadProgressModal && !downloadSuccess)"
+                    @click="handleDownloadVideo"
                   >
                     <div class="flex flex-col min-w-0">
                       <span
@@ -342,13 +397,20 @@
                     <div
                       class="w-12 h-12 sm:w-14 sm:h-14 bg-white/20 rounded-xl sm:rounded-2xl flex items-center justify-center group-hover:scale-110 transition-transform shrink-0"
                     >
-                      <iconify-icon icon="lucide:download" class="text-xl sm:text-2xl" />
+                      <iconify-icon
+                        icon="lucide:download"
+                        class="text-xl sm:text-2xl"
+                      />
                     </div>
                   </button>
                   <p
                     class="text-center text-[10px] text-white/30 uppercase font-black tracking-widest"
                   >
-                    Video kualitas default
+                    {{
+                      videoInfo.formatOptions?.length
+                        ? `Kualitas: ${videoInfo.formatOptions[selectedFormatIndex]?.label ?? "—"}`
+                        : "Video kualitas default"
+                    }}
                   </p>
                 </div>
 
@@ -356,8 +418,8 @@
                   <button
                     type="button"
                     class="w-full flex items-center justify-between glass-panel text-white p-4 sm:p-6 rounded-2xl sm:rounded-3xl hover:bg-white/10 hover:border-[#FF0000]/30 transition-all group disabled:opacity-60 disabled:cursor-not-allowed"
-                    :disabled="downloadMp3Loading"
-                    @click="onDownloadMp3"
+                    :disabled="downloadMp3Loading || (showDownloadProgressModal && !downloadSuccess)"
+                    @click="handleDownloadMp3"
                   >
                     <div class="flex flex-col min-w-0">
                       <span
@@ -374,7 +436,10 @@
                     <div
                       class="w-12 h-12 sm:w-14 sm:h-14 bg-white/5 rounded-xl sm:rounded-2xl flex items-center justify-center group-hover:scale-110 transition-transform shrink-0"
                     >
-                      <iconify-icon icon="lucide:music" class="text-xl sm:text-2xl" />
+                      <iconify-icon
+                        icon="lucide:music"
+                        class="text-xl sm:text-2xl"
+                      />
                     </div>
                   </button>
                   <p
@@ -407,7 +472,9 @@
   <section
     class="container mx-auto px-4 sm:px-6 py-8 sm:py-10 md:py-24 border-t border-white/5"
   >
-    <div class="flex items-center justify-between mb-8 sm:mb-12 flex-wrap gap-4">
+    <div
+      class="flex items-center justify-between mb-8 sm:mb-12 flex-wrap gap-4"
+    >
       <div>
         <h2
           class="font-heading text-2xl sm:text-3xl md:text-4xl font-black uppercase italic"
@@ -463,7 +530,10 @@
         Belum ada riwayat. Isi link YouTube lalu klik Download untuk menambah.
       </EmptyContent>
     </Empty>
-    <div v-else class="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-5 gap-4 sm:gap-6">
+    <div
+      v-else
+      class="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-5 gap-4 sm:gap-6"
+    >
       <div
         v-for="item in historyItems ?? []"
         :key="item.id"
@@ -519,7 +589,9 @@
       :open="showClearHistoryDialog"
       @update:open="showClearHistoryDialog = $event"
     >
-      <UiDialogContent class="bg-[#1A1A1A] border-white/10 text-white max-w-[calc(100vw-2rem)] sm:max-w-lg">
+      <UiDialogContent
+        class="bg-[#1A1A1A] border-white/10 text-white max-w-[calc(100vw-2rem)] sm:max-w-lg"
+      >
         <UiDialogHeader>
           <UiDialogTitle class="font-heading text-lg sm:text-xl text-white">
             Clear History?
@@ -546,13 +618,33 @@
         </UiDialogFooter>
       </UiDialogContent>
     </UiDialog>
+
+    <!-- Download Progress Modal -->
+    <LoadingProgress
+      :open="showDownloadProgressModal"
+      :progress="downloadProgress"
+      :status-text="downloadStatusText"
+      :stage-label="downloadStageLabel"
+      :file-name="downloadFileName"
+      :loaded-bytes="downloadLoadedBytes"
+      :total-bytes="downloadTotalBytes"
+      :speed-bytes-per-sec="downloadSpeedBytesPerSec"
+      :remaining-sec="downloadRemainingSec"
+      :success="downloadSuccess"
+      :completed-file-name="downloadCompleteFilename"
+      :metadata="downloadProgressMetadata"
+      @close="closeProgressModal"
+      @save="onProgressModalSave"
+      @download-new="onProgressModalDownloadNew"
+    />
   </section>
 </template>
 
 <script setup lang="ts">
-import { ref } from "vue";
+import { ref, watch } from "vue";
 import { toast } from "vue-sonner";
 import { Empty, EmptyHeader, EmptyContent } from "~/components/ui/empty";
+import LoadingProgress from "~/components/LoadingProgress.vue";
 import { useStateYoutube } from "~/services/useStateYoutube";
 
 const {
@@ -564,6 +656,8 @@ const {
   downloadImagesLoading,
   videoLoadFailed,
   videoInfo,
+  effectivePreviewVideoUrl,
+  selectedFormatIndex,
   imageIndex,
   historyItems,
   historyReady,
@@ -574,7 +668,45 @@ const {
   onDownloadMp3,
   onDownloadImages,
   onDownloadAnother,
+  showDownloadProgressModal,
+  downloadProgress,
+  downloadStatusText,
+  downloadStageLabel,
+  downloadFileName,
+  downloadLoadedBytes,
+  downloadTotalBytes,
+  downloadSpeedBytesPerSec,
+  downloadRemainingSec,
+  downloadSuccess,
+  downloadCompleteFilename,
+  downloadProgressMetadata,
+  downloadProgressError,
+  closeProgressModal,
+  onProgressModalSave,
+  onProgressModalDownloadNew,
 } = useStateYoutube();
+
+watch(downloadProgressError, (err) => {
+  if (err) {
+    toast.error(err);
+  }
+});
+
+async function handleDownloadVideo() {
+  try {
+    await onDownloadVideo();
+  } catch {
+    toast.error("Gagal unduh video");
+  }
+}
+
+async function handleDownloadMp3() {
+  try {
+    await onDownloadMp3();
+  } catch {
+    toast.error("Gagal unduh audio");
+  }
+}
 
 const showClearHistoryDialog = ref(false);
 
@@ -604,4 +736,3 @@ function onConfirmClearHistory() {
   toast.success("Riwayat berhasil dihapus");
 }
 </script>
-
