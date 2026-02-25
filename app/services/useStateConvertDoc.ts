@@ -5,14 +5,7 @@ import { useAppConfig } from "~/lib/config";
 const HISTORY_STORAGE_KEY = "convert-doc-history";
 const HISTORY_MAX = 30;
 
-export type TargetFormat =
-  | "pdf"
-  | "docx"
-  | "xlsx"
-  | "pptx"
-  | "odt"
-  | "ods"
-  | "odp";
+export type TargetFormat = "pdf" | "docx";
 
 interface HistoryItemConvert {
   id: string;
