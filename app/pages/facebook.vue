@@ -27,8 +27,9 @@
           </h1>
 
           <p class="text-white/50 text-base sm:text-lg max-w-lg mb-8 sm:mb-12">
-            Download video dari Facebook &amp; fb.watch. Tempel link video
-            publik dan unduh dalam hitungan detik.
+            Download video &amp; foto dari Facebook, fb.watch, dan link
+            <code class="px-1.5 py-0.5 rounded bg-white/5 text-xs align-middle">facebook.com/share/p/...</code>.
+            Tempel link post publik lalu unduh dalam hitungan detik.
           </p>
 
           <div

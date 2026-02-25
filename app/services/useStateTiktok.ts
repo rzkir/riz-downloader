@@ -150,10 +150,184 @@ export function useStateTiktok() {
         },
     });
 
+    // ---- Download Progress Modal (similar to YouTube) ----
+    const showDownloadProgressModal = ref(false);
+    const downloadProgress = ref(0);
+    const downloadStatusText = ref("Initializing...");
+    const downloadStageLabel = ref("Preparing Stream");
+    const downloadFileName = ref("");
+    const downloadLoadedBytes = ref(0);
+    const downloadTotalBytes = ref<number | null>(null);
+    const downloadSpeedBytesPerSec = ref(0);
+    const downloadRemainingSec = ref<number | null>(null);
+    const downloadSuccess = ref(false);
+    const downloadCompleteBlob = ref<Blob | null>(null);
+    const downloadCompleteFilename = ref("");
+    const downloadProgressMetadata = ref<
+        { label: string; value: string; gradient?: boolean }[]
+    >([]);
+    const downloadProgressError = ref("");
+
+    let progressSpeedLastLoaded = 0;
+    let progressSpeedLastTime = 0;
+
+    function openProgressModal(
+        fileName: string,
+        metadata: { label: string; value: string; gradient?: boolean }[] = [],
+    ) {
+        showDownloadProgressModal.value = true;
+        downloadProgress.value = 0;
+        downloadStatusText.value = "Initializing...";
+        downloadStageLabel.value = "Preparing Stream";
+        downloadFileName.value = fileName;
+        downloadLoadedBytes.value = 0;
+        downloadTotalBytes.value = null;
+        downloadSpeedBytesPerSec.value = 0;
+        downloadRemainingSec.value = null;
+        downloadSuccess.value = false;
+        downloadCompleteBlob.value = null;
+        downloadCompleteFilename.value = fileName;
+        downloadProgressMetadata.value = metadata;
+        downloadProgressError.value = "";
+        progressSpeedLastLoaded = 0;
+        progressSpeedLastTime = Date.now();
+    }
+
+    function closeProgressModal() {
+        showDownloadProgressModal.value = false;
+        downloadCompleteBlob.value = null;
+        downloadProgressError.value = "";
+    }
+
+    function updateProgressFromXhr(loaded: number, total: number | null) {
+        downloadLoadedBytes.value = loaded;
+        downloadTotalBytes.value = total;
+        const now = Date.now();
+        const elapsed = (now - progressSpeedLastTime) / 1000;
+        if (elapsed >= 0.25) {
+            downloadSpeedBytesPerSec.value = (loaded - progressSpeedLastLoaded) / elapsed;
+            progressSpeedLastLoaded = loaded;
+            progressSpeedLastTime = now;
+        }
+        if (total != null && total > 0) {
+            const ratio = total > 0 ? loaded / total : 0;
+            const p = Math.min(100, ratio * 100);
+            downloadProgress.value = p;
+            if (downloadSpeedBytesPerSec.value > 0 && loaded < total) {
+                const remaining = (total - loaded) / downloadSpeedBytesPerSec.value;
+                downloadRemainingSec.value = Math.max(0, Math.ceil(remaining));
+            } else {
+                downloadRemainingSec.value = 0;
+            }
+            if (p < 15) {
+                downloadStatusText.value = "Initializing...";
+                downloadStageLabel.value = "Preparing Stream";
+            } else if (p < 70) {
+                downloadStatusText.value = "Downloading...";
+                downloadStageLabel.value = "Saving Media Data";
+            } else if (p < 85) {
+                downloadStatusText.value = "Processing...";
+                downloadStageLabel.value = "Optimizing Video";
+            } else {
+                // Termasuk ketika p sudah 100: tetap pakai label finalizing/verifying
+                downloadStatusText.value = "Finalizing...";
+                downloadStageLabel.value = "Verifying Assets";
+            }
+        } else {
+            // Server tidak mengirim total size: gunakan estimasi berbasis bytes yang sudah diunduh,
+            // tapi jangan pernah menyentuh 100% sebelum unduhan benar‑benar selesai (onload).
+            const estimatedTotal = 30 * 1024 * 1024; // 30MB, sama seperti YouTube
+            const pFromLoaded = (loaded / estimatedTotal) * 99;
+            downloadProgress.value = Math.min(
+                99,
+                Math.max(downloadProgress.value, pFromLoaded),
+            );
+            if (downloadProgress.value < 30) {
+                downloadStatusText.value = "Downloading...";
+                downloadStageLabel.value = "Saving Media Data";
+            } else if (downloadProgress.value < 80) {
+                downloadStatusText.value = "Processing...";
+                downloadStageLabel.value = "Optimizing Video";
+            } else {
+                downloadStatusText.value = "Finalizing...";
+                downloadStageLabel.value = "Verifying Assets";
+            }
+        }
+    }
+
+    function finishProgressSuccess(blob: Blob, filename: string) {
+        downloadProgress.value = 100;
+        downloadStatusText.value = "Complete!";
+        downloadStageLabel.value = "Done";
+        downloadRemainingSec.value = 0;
+        downloadCompleteBlob.value = blob;
+        downloadCompleteFilename.value = filename;
+        downloadSuccess.value = true;
+    }
+
+    function downloadWithProgress(
+        url: string,
+        defaultFilename: string,
+    ): Promise<Blob> {
+        return new Promise((resolve, reject) => {
+            const xhr = new XMLHttpRequest();
+            xhr.open("GET", url);
+            xhr.responseType = "blob";
+
+            xhr.onprogress = (ev: ProgressEvent) => {
+                const total =
+                    ev.lengthComputable && ev.total != null
+                        ? ev.total
+                        : xhr.getResponseHeader("Content-Length") != null
+                            ? parseInt(xhr.getResponseHeader("Content-Length")!, 10)
+                            : null;
+                updateProgressFromXhr(ev.loaded, total);
+            };
+
+            xhr.onload = () => {
+                if (xhr.status < 200 || xhr.status >= 300) {
+                    reject(new Error(`Download failed: ${xhr.status}`));
+                    return;
+                }
+                const blob = xhr.response as Blob;
+                if (!blob || !(blob instanceof Blob)) {
+                    reject(new Error("Invalid response"));
+                    return;
+                }
+                let filename = defaultFilename;
+                const disp = xhr.getResponseHeader("Content-Disposition");
+                if (disp) {
+                    const m = disp.match(/filename="?([^";\n]+)"?/);
+                    if (m?.[1]) filename = m[1].trim();
+                }
+                downloadProgress.value = 100;
+                downloadRemainingSec.value = 0;
+                finishProgressSuccess(blob, filename);
+                resolve(blob);
+            };
+
+            xhr.onerror = () => reject(new Error("Network error"));
+            xhr.send();
+        });
+    }
+
+    function onProgressModalSave() {
+        const blob = downloadCompleteBlob.value;
+        const filename = downloadCompleteFilename.value;
+        if (blob && filename) triggerBlobDownload(blob, filename);
+        closeProgressModal();
+    }
+
+    function onProgressModalDownloadNew() {
+        closeProgressModal();
+        document.getElementById("download-input")?.scrollIntoView({ behavior: "smooth" });
+    }
+
     const downloadVideoLoading = computed(() => downloadVideoMutation.isPending.value);
     const downloadMp3Loading = computed(() => downloadMp3Mutation.isPending.value);
     const downloadImagesLoading = computed(() => downloadImageMutation.isPending.value);
     const downloadError = computed(() => {
+        if (downloadProgressError.value) return downloadProgressError.value;
         const err =
             metadataQuery.error.value ??
             downloadVideoMutation.error.value ??
@@ -230,16 +404,52 @@ export function useStateTiktok() {
         searchUrl.value = url;
     }
 
-    function onDownloadVideo() {
+    async function onDownloadVideo() {
         const url = searchUrl.value.trim();
-        if (!url || !videoInfo.value) return;
-        downloadVideoMutation.mutate(url);
+        const info = videoInfo.value;
+        if (!url || !info) return;
+
+        const filename = "tiktok_video.mp4";
+        const downloadUrl = `${baseUrl}/api/${PLATFORM}/download?url=${encodeURIComponent(url)}`;
+
+        openProgressModal(filename, [
+            { label: "Format", value: "MP4" },
+            { label: "Source", value: "TikTok" },
+            { label: "No watermark", value: info.videoUrl ? "Yes" : "Unknown", gradient: true },
+        ]);
+
+        try {
+            await downloadWithProgress(downloadUrl, filename);
+        } catch (err) {
+            downloadProgressError.value =
+                err instanceof Error ? err.message : "Download failed";
+            closeProgressModal();
+            throw err;
+        }
     }
 
-    function onDownloadMp3() {
+    async function onDownloadMp3() {
         const url = searchUrl.value.trim();
-        if (!url || !videoInfo.value) return;
-        downloadMp3Mutation.mutate(url);
+        const info = videoInfo.value;
+        if (!url || !info) return;
+
+        const filename = "tiktok_audio.mp3";
+        const downloadUrl = `${baseUrl}/api/${PLATFORM}/download-mp3?url=${encodeURIComponent(url)}`;
+
+        openProgressModal(filename, [
+            { label: "Format", value: "MP3" },
+            { label: "Source", value: "TikTok" },
+            { label: "Quality", value: "Audio", gradient: true },
+        ]);
+
+        try {
+            await downloadWithProgress(downloadUrl, filename);
+        } catch (err) {
+            downloadProgressError.value =
+                err instanceof Error ? err.message : "Download failed";
+            closeProgressModal();
+            throw err;
+        }
     }
 
     function onDownloadImages() {
@@ -276,5 +486,21 @@ export function useStateTiktok() {
         onDownloadMp3,
         onDownloadImages,
         onDownloadAnother,
+        showDownloadProgressModal,
+        downloadProgress,
+        downloadStatusText,
+        downloadStageLabel,
+        downloadFileName,
+        downloadLoadedBytes,
+        downloadTotalBytes,
+        downloadSpeedBytesPerSec,
+        downloadRemainingSec,
+        downloadSuccess,
+        downloadCompleteFilename,
+        downloadProgressMetadata,
+        downloadProgressError,
+        closeProgressModal,
+        onProgressModalSave,
+        onProgressModalDownloadNew,
     };
 }
