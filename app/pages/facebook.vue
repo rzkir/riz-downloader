@@ -153,15 +153,7 @@
                   Ready for Download
                 </p>
                 <p class="text-white/60 text-xs">
-                  <template v-if="videoInfo.videoUrl || (videoInfo.qualities && videoInfo.qualities.length)">
-                    Video Facebook siap diunduh. Pilih kualitas lalu klik Download.
-                  </template>
-                  <template v-else-if="videoInfo.previewImageUrls?.length">
-                    Foto Facebook siap diunduh. Pilih gambar lalu klik Download Foto.
-                  </template>
-                  <template v-else>
-                    Video atau foto siap diunduh.
-                  </template>
+                  Video Facebook siap diunduh. Klik tombol Download untuk mulai mengunduh.
                 </p>
               </div>
             </div>
@@ -178,15 +170,8 @@
               >
                 <!-- Cover / image fallback (poster or single image) -->
                 <img
-                  v-if="videoInfo.cover && !(videoInfo.previewImageUrls?.length && !videoInfo.previewVideoUrl && !videoInfo.videoUrl)"
+                  v-if="videoInfo.cover"
                   :src="videoInfo.cover"
-                  alt="Preview"
-                  class="absolute inset-0 w-full h-full object-cover z-0"
-                />
-                <!-- Photo post: show selected image by index -->
-                <img
-                  v-if="videoInfo.previewImageUrls?.length && !videoInfo.previewVideoUrl && !videoInfo.videoUrl"
-                  :src="videoInfo.previewImageUrls[imageIndex]"
                   alt="Preview"
                   class="absolute inset-0 w-full h-full object-cover z-0"
                 />
@@ -207,7 +192,7 @@
                 />
                 <div
                   v-if="
-                    !videoInfo.cover && !videoInfo.previewImageUrls?.length && (videoLoadFailed || !videoInfo.videoUrl)
+                    !videoInfo.cover && (videoLoadFailed || !videoInfo.videoUrl)
                   "
                   class="absolute inset-0 flex items-center justify-center bg-neutral-800 z-0"
                 >
@@ -229,21 +214,6 @@
                       class="text-white text-xl sm:text-2xl ml-1"
                     />
                   </div>
-                </div>
-                <!-- Carousel dots for multiple images -->
-                <div
-                  v-if="(videoInfo.previewImageUrls?.length ?? 0) > 1"
-                  class="absolute bottom-3 left-0 right-0 z-10 flex justify-center gap-1.5"
-                >
-                  <button
-                    v-for="(_, i) in videoInfo.previewImageUrls"
-                    :key="i"
-                    type="button"
-                    class="w-2 h-2 rounded-full transition-all"
-                    :class="imageIndex === i ? 'bg-[#1877F2] scale-125' : 'bg-white/40 hover:bg-white/60'"
-                    :aria-label="`Gambar ${i + 1}`"
-                    @click="imageIndex = i"
-                  />
                 </div>
               </div>
             </div>
@@ -282,7 +252,7 @@
                   }}</span>
                 </h1>
                 <div
-                  v-if="videoInfo.duration && (videoInfo.videoUrl || videoInfo.qualities?.length)"
+                  v-if="videoInfo.duration && videoInfo.videoUrl"
                   class="flex flex-wrap items-center gap-6 text-white/50 text-sm font-medium"
                 >
                   <span class="flex items-center gap-2">
@@ -292,50 +262,19 @@
                 </div>
               </div>
 
-              <!-- Pilih kualitas -->
-              <div
-                v-if="videoInfo.qualities && videoInfo.qualities.length > 0"
-                class="space-y-3"
-              >
-                <label
-                  class="text-xs font-heading font-black uppercase tracking-widest text-white/50"
-                >
-                  Pilih kualitas
-                </label>
-                <div class="flex flex-wrap gap-2">
-                  <button
-                    v-for="(q, idx) in videoInfo.qualities"
-                    :key="idx"
-                    type="button"
-                    class="px-4 py-2.5 rounded-xl font-bold text-sm transition-all border"
-                    :class="
-                      selectedQualityIndex === idx
-                        ? 'bg-[#1877F2] border-[#1877F2] text-white'
-                        : 'glass-panel border-white/10 text-white/80 hover:border-[#1877F2]/50 hover:text-white'
-                    "
-                    @click="selectedQualityIndex = idx"
-                  >
-                    {{ q.label }}
-                  </button>
-                </div>
-              </div>
-
               <div
                 class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6"
               >
                 <!-- Download Video (satu tombol, pakai kualitas terpilih) -->
                 <div
-                  v-if="
-                    videoInfo.videoUrl ||
-                    (videoInfo.qualities && videoInfo.qualities.length)
-                  "
+                  v-if="videoInfo.videoUrl"
                   class="space-y-3"
                 >
                   <button
                     type="button"
                     class="w-full flex items-center justify-between bg-[#1877F2] hover:bg-[#1877F2]/90 text-white p-4 sm:p-6 rounded-2xl sm:rounded-3xl hover:shadow-[0_0_40px_rgba(24,119,242,0.3)] transition-all group disabled:opacity-60 disabled:cursor-not-allowed"
-                    :disabled="downloadVideoLoading"
-                    @click="onDownloadVideo()"
+                    :disabled="downloadVideoLoading || (showDownloadProgressModal && !downloadSuccess)"
+                    @click="handleDownloadVideo"
                   >
                     <div class="flex flex-col min-w-0">
                       <span
@@ -350,12 +289,7 @@
                       <span
                         class="text-white/70 text-xs font-bold uppercase tracking-widest mt-1"
                       >
-                        {{
-                          videoInfo.qualities?.length
-                            ? (videoInfo.qualities[selectedQualityIndex]
-                                ?.label ?? "MP4")
-                            : "Format: MP4"
-                        }}
+                        Format: MP4
                       </span>
                     </div>
                     <div
@@ -370,49 +304,7 @@
                   <p
                     class="text-center text-[10px] text-white/30 uppercase font-black tracking-widest"
                   >
-                    Unduh dengan kualitas terpilih
-                  </p>
-                </div>
-
-                <div v-if="videoInfo.cover || videoInfo.previewImageUrls?.length" class="space-y-3">
-                  <button
-                    type="button"
-                    class="w-full flex items-center justify-between glass-panel text-white p-4 sm:p-6 rounded-2xl sm:rounded-3xl hover:bg-white/10 transition-all group disabled:opacity-60 disabled:cursor-not-allowed"
-                    :disabled="downloadImageLoading"
-                    @click="onDownloadThumbnail"
-                  >
-                    <div class="flex flex-col min-w-0">
-                      <span
-                        class="font-heading font-black text-base sm:text-xl uppercase italic"
-                      >
-                        {{
-                          downloadImageLoading
-                            ? "Memproses..."
-                            : (videoInfo.videoUrl || videoInfo.qualities?.length)
-                              ? "Download Thumbnail"
-                              : (videoInfo.previewImageUrls?.length ?? 0) > 1
-                                ? `Download Foto (${imageIndex + 1}/${videoInfo.previewImageUrls?.length})`
-                                : "Download Foto"
-                        }}
-                      </span>
-                      <span
-                        class="text-white/70 text-xs font-bold uppercase tracking-widest mt-1"
-                        >JPG / WEBP</span
-                      >
-                    </div>
-                    <div
-                      class="w-12 h-12 sm:w-14 sm:h-14 bg-white/5 rounded-xl sm:rounded-2xl flex items-center justify-center group-hover:scale-110 transition-transform shrink-0"
-                    >
-                      <iconify-icon
-                        icon="lucide:image"
-                        class="text-xl sm:text-2xl"
-                      />
-                    </div>
-                  </button>
-                  <p
-                    class="text-center text-[10px] text-white/30 uppercase font-black tracking-widest"
-                  >
-                    {{ (videoInfo.videoUrl || videoInfo.qualities?.length) ? "Gambar sampul" : "Gambar saat ini" }}
+                    Unduh video Facebook
                   </p>
                 </div>
               </div>
@@ -538,21 +430,39 @@
       </div>
     </div>
   </section>
+
+  <!-- Download Progress Modal (sama seperti TikTok) -->
+  <LoadingProgress
+    :open="showDownloadProgressModal"
+    :progress="downloadProgress"
+    :status-text="downloadStatusText"
+    :stage-label="downloadStageLabel"
+    :file-name="downloadFileName"
+    :loaded-bytes="downloadLoadedBytes"
+    :total-bytes="downloadTotalBytes"
+    :speed-bytes-per-sec="downloadSpeedBytesPerSec"
+    :remaining-sec="downloadRemainingSec"
+    :success="downloadSuccess"
+    :completed-file-name="downloadCompleteFilename"
+    :metadata="downloadProgressMetadata"
+    @close="closeProgressModal"
+    @save="onProgressModalSave"
+    @download-new="onProgressModalDownloadNew"
+  />
 </template>
 
 <script setup lang="ts">
+import { watch } from "vue";
 import { toast } from "vue-sonner";
 import { useStateFacebook } from "~/services/useStateFacebook";
 import { Empty, EmptyHeader, EmptyContent } from "~/components/ui/empty";
+import LoadingProgress from "~/components/LoadingProgress.vue";
 
 const {
   videoUrl,
-  selectedQualityIndex,
-  imageIndex,
   downloadLoading,
   downloadError,
   downloadVideoLoading,
-  downloadImageLoading,
   videoLoadFailed,
   videoInfo,
   historyItems,
@@ -562,9 +472,30 @@ const {
   getHistoryPreviewUrl,
   onSearch,
   onDownloadVideo,
-  onDownloadThumbnail,
   onDownloadAnother,
+  showDownloadProgressModal,
+  downloadProgress,
+  downloadStatusText,
+  downloadStageLabel,
+  downloadFileName,
+  downloadLoadedBytes,
+  downloadTotalBytes,
+  downloadSpeedBytesPerSec,
+  downloadRemainingSec,
+  downloadSuccess,
+  downloadCompleteFilename,
+  downloadProgressMetadata,
+  downloadProgressError,
+  closeProgressModal,
+  onProgressModalSave,
+  onProgressModalDownloadNew,
 } = useStateFacebook();
+
+watch(downloadProgressError, (err) => {
+  if (err) {
+    toast.error(err);
+  }
+});
 
 const onPaste = async () => {
   try {
@@ -581,4 +512,12 @@ const onPaste = async () => {
     );
   }
 };
+
+async function handleDownloadVideo() {
+  try {
+    await onDownloadVideo();
+  } catch {
+    toast.error("Gagal unduh video");
+  }
+}
 </script>

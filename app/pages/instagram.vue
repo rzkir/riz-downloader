@@ -25,8 +25,8 @@
           </h1>
 
           <p class="text-white/50 text-base sm:text-lg max-w-lg mb-8 sm:mb-12">
-            Download Reels, posts, Stories, and carousels. Paste any public
-            Instagram link and get your file in seconds.
+            Download Reels, posts, and carousels. Paste any public Instagram
+            post or Reel link and get your file in seconds.
           </p>
 
           <div id="download-input" class="relative w-full max-w-2xl mb-8 sm:mb-12">
@@ -36,7 +36,7 @@
               <UiInput
                 v-model="videoUrl"
                 type="text"
-                placeholder="Insert Instagram Post / Reel / Story Link Here..."
+                placeholder="Insert Instagram Post / Reel Link Here..."
                 class="bg-transparent flex-1 min-w-0 py-3 sm:py-4 pl-4 sm:pl-5 text-sm sm:text-base text-white outline-none placeholder:text-white/20 font-medium border-0 shadow-none focus-visible:ring-0 focus-visible:border-0"
               />
               <div class="flex items-center justify-end sm:justify-start gap-2 shrink-0">

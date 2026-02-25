@@ -1,5 +1,5 @@
 import { ref, computed, watch, onMounted } from "vue";
-import { useQuery, useMutation } from "@tanstack/vue-query";
+import { useQuery } from "@tanstack/vue-query";
 import { useAppConfig } from "~/lib/config";
 
 const HISTORY_STORAGE_KEY = "facebook-download-history";
@@ -26,34 +26,22 @@ function saveHistoryToStorage(items: HistoryItem[]) {
 }
 
 function buildVideoInfo(data: FacebookMetadataResponse, baseUrl: string, url: string): VideoInfo {
-    const imageCount = data.images?.length ?? (data.thumbnail ? 1 : 0);
-    const previewImageUrls =
-        imageCount > 0
-            ? Array.from({ length: imageCount }, (_, i) =>
-                  `${baseUrl}/api/${PLATFORM}/preview-image?url=${encodeURIComponent(url)}&index=${i}`,
-              )
-            : undefined;
     return {
         videoUrl: data.videoUrl ?? undefined,
-        videoUrlHd: data.videoUrlHd ?? undefined,
-        qualities: data.qualities ?? undefined,
+        // Facebook: kita tidak expose opsi kualitas di UI, cukup gunakan URL utama.
+        videoUrlHd: undefined,
+        qualities: undefined,
         previewVideoUrl: data.videoUrl
             ? `${baseUrl}/api/${PLATFORM}/preview-video?url=${encodeURIComponent(url)}`
             : undefined,
         cover: data.thumbnail ?? undefined,
-        images: data.images?.length ? data.images : undefined,
-        previewImageUrls,
-        text: data.title ?? undefined,
+        // Facebook: kita tidak memakai status/caption sebagai text yang ditampilkan.
+        text: undefined,
         author: undefined,
         duration: data.duration ?? undefined,
         durationMs: data.durationMs ?? undefined,
         id: data.id ?? undefined,
     };
-}
-
-interface FacebookQualityOption {
-    label: string;
-    url: string;
 }
 
 interface FacebookMetadataResponse {
@@ -63,7 +51,6 @@ interface FacebookMetadataResponse {
     durationMs?: number | null;
     videoUrl?: string | null;
     videoUrlHd?: string | null;
-    qualities?: FacebookQualityOption[] | null;
     thumbnail?: string | null;
     images?: string[] | null;
 }
@@ -74,8 +61,6 @@ export function useStateFacebook() {
 
     const videoUrl = ref("");
     const searchUrl = ref("");
-    const selectedQualityIndex = ref(0);
-    const imageIndex = ref(0);
     const videoLoadFailed = ref(false);
     const historyItems = ref<HistoryItem[]>([]);
     const historyReady = ref(false);
@@ -118,73 +103,199 @@ export function useStateFacebook() {
                 title: data.title ?? undefined,
                 thumbnail: data.thumbnail ?? undefined,
                 videoUrl: data.videoUrl ?? undefined,
-                images: data.images ?? undefined,
             });
     });
 
-    const downloadVideoMutation = useMutation({
-        mutationFn: async ({ url, qualityIndex }: { url: string; qualityIndex: number }) => {
-            const qs = qualityIndex > 0 ? `&quality=${qualityIndex}` : "";
-            const res = await fetch(
-                `${baseUrl}/api/${PLATFORM}/download?url=${encodeURIComponent(url)}${qs}`,
-            );
-            if (!res.ok) throw new Error("Gagal unduh video");
-            return res.blob();
-        },
-        onSuccess(blob: Blob) {
-            triggerBlobDownload(blob, "facebook_video.mp4");
-        },
-    });
+    // ---- Download Progress Modal (mengikuti pola TikTok) ----
+    const showDownloadProgressModal = ref(false);
+    const downloadProgress = ref(0);
+    const downloadStatusText = ref("Initializing...");
+    const downloadStageLabel = ref("Preparing Stream");
+    const downloadFileName = ref("");
+    const downloadLoadedBytes = ref(0);
+    const downloadTotalBytes = ref<number | null>(null);
+    const downloadSpeedBytesPerSec = ref(0);
+    const downloadRemainingSec = ref<number | null>(null);
+    const downloadSuccess = ref(false);
+    const downloadCompleteBlob = ref<Blob | null>(null);
+    const downloadCompleteFilename = ref("");
+    const downloadProgressMetadata = ref<
+        { label: string; value: string; gradient?: boolean }[]
+    >([]);
+    const downloadProgressError = ref("");
 
-    const downloadImageMutation = useMutation({
-        mutationFn: async ({ url, index = 0 }: { url: string; index?: number }) => {
-            const res = await fetch(
-                `${baseUrl}/api/${PLATFORM}/download-image?url=${encodeURIComponent(url)}&index=${index}`,
-            );
-            if (!res.ok) throw new Error("Gagal unduh gambar");
-            return res.blob();
-        },
-        onSuccess(blob: Blob, variables: { url: string; index?: number }) {
-            const idx = variables.index ?? 0;
-            triggerBlobDownload(blob, `facebook_${idx + 1}.jpg`);
-        },
-    });
+    let progressSpeedLastLoaded = 0;
+    let progressSpeedLastTime = 0;
 
-    const downloadAudioMutation = useMutation({
-        mutationFn: async (url: string) => {
-            const res = await fetch(
-                `${baseUrl}/api/${PLATFORM}/download-mp3?url=${encodeURIComponent(url)}`,
-            );
-            if (!res.ok) throw new Error("Gagal unduh audio");
-            return res.blob();
-        },
-        onSuccess(blob: Blob) {
-            triggerBlobDownload(blob, "facebook_audio.mp3");
-        },
-    });
+    function openProgressModal(
+        fileName: string,
+        metadata: { label: string; value: string; gradient?: boolean }[] = [],
+    ) {
+        showDownloadProgressModal.value = true;
+        downloadProgress.value = 0;
+        downloadStatusText.value = "Initializing...";
+        downloadStageLabel.value = "Preparing Stream";
+        downloadFileName.value = fileName;
+        downloadLoadedBytes.value = 0;
+        downloadTotalBytes.value = null;
+        downloadSpeedBytesPerSec.value = 0;
+        downloadRemainingSec.value = null;
+        downloadSuccess.value = false;
+        downloadCompleteBlob.value = null;
+        downloadCompleteFilename.value = fileName;
+        downloadProgressMetadata.value = metadata;
+        downloadProgressError.value = "";
+        progressSpeedLastLoaded = 0;
+        progressSpeedLastTime = Date.now();
+    }
 
-    const downloadVideoLoading = computed(() => downloadVideoMutation.isPending.value);
-    const downloadImageLoading = computed(() => downloadImageMutation.isPending.value);
-    const downloadAudioLoading = computed(() => downloadAudioMutation.isPending.value);
+    function closeProgressModal() {
+        showDownloadProgressModal.value = false;
+        downloadCompleteBlob.value = null;
+        downloadProgressError.value = "";
+    }
+
+    function updateProgressFromXhr(loaded: number, total: number | null) {
+        downloadLoadedBytes.value = loaded;
+        downloadTotalBytes.value = total;
+        const now = Date.now();
+        const elapsed = (now - progressSpeedLastTime) / 1000;
+        if (elapsed >= 0.25) {
+            downloadSpeedBytesPerSec.value = (loaded - progressSpeedLastLoaded) / elapsed;
+            progressSpeedLastLoaded = loaded;
+            progressSpeedLastTime = now;
+        }
+        if (total != null && total > 0) {
+            const ratio = total > 0 ? loaded / total : 0;
+            const p = Math.min(100, ratio * 100);
+            downloadProgress.value = p;
+            if (downloadSpeedBytesPerSec.value > 0 && loaded < total) {
+                const remaining = (total - loaded) / downloadSpeedBytesPerSec.value;
+                downloadRemainingSec.value = Math.max(0, Math.ceil(remaining));
+            } else {
+                downloadRemainingSec.value = 0;
+            }
+            if (p < 15) {
+                downloadStatusText.value = "Initializing...";
+                downloadStageLabel.value = "Preparing Stream";
+            } else if (p < 70) {
+                downloadStatusText.value = "Downloading...";
+                downloadStageLabel.value = "Saving Media Data";
+            } else if (p < 85) {
+                downloadStatusText.value = "Processing...";
+                downloadStageLabel.value = "Optimizing Video";
+            } else {
+                downloadStatusText.value = "Finalizing...";
+                downloadStageLabel.value = "Verifying Assets";
+            }
+        } else {
+            const estimatedTotal = 30 * 1024 * 1024; // 30MB estimasi
+            const pFromLoaded = (loaded / estimatedTotal) * 99;
+            downloadProgress.value = Math.min(
+                99,
+                Math.max(downloadProgress.value, pFromLoaded),
+            );
+            if (downloadProgress.value < 30) {
+                downloadStatusText.value = "Downloading...";
+                downloadStageLabel.value = "Saving Media Data";
+            } else if (downloadProgress.value < 80) {
+                downloadStatusText.value = "Processing...";
+                downloadStageLabel.value = "Optimizing Video";
+            } else {
+                downloadStatusText.value = "Finalizing...";
+                downloadStageLabel.value = "Verifying Assets";
+            }
+        }
+    }
+
+    function finishProgressSuccess(blob: Blob, filename: string) {
+        downloadProgress.value = 100;
+        downloadStatusText.value = "Complete!";
+        downloadStageLabel.value = "Done";
+        downloadRemainingSec.value = 0;
+        downloadCompleteBlob.value = blob;
+        downloadCompleteFilename.value = filename;
+        downloadSuccess.value = true;
+    }
+
+    function downloadWithProgress(
+        url: string,
+        defaultFilename: string,
+    ): Promise<Blob> {
+        return new Promise((resolve, reject) => {
+            const xhr = new XMLHttpRequest();
+            xhr.open("GET", url);
+            xhr.responseType = "blob";
+
+            xhr.onprogress = (ev: ProgressEvent) => {
+                const total =
+                    ev.lengthComputable && ev.total != null
+                        ? ev.total
+                        : xhr.getResponseHeader("Content-Length") != null
+                            ? parseInt(xhr.getResponseHeader("Content-Length")!, 10)
+                            : null;
+                updateProgressFromXhr(ev.loaded, total);
+            };
+
+            xhr.onload = () => {
+                if (xhr.status < 200 || xhr.status >= 300) {
+                    reject(new Error(`Download failed: ${xhr.status}`));
+                    return;
+                }
+                const blob = xhr.response as Blob;
+                if (!blob || !(blob instanceof Blob)) {
+                    reject(new Error("Invalid response"));
+                    return;
+                }
+                let filename = defaultFilename;
+                const disp = xhr.getResponseHeader("Content-Disposition");
+                if (disp) {
+                    const m = disp.match(/filename="?([^";\n]+)"?/);
+                    if (m?.[1]) filename = m[1].trim();
+                }
+                downloadProgress.value = 100;
+                downloadRemainingSec.value = 0;
+                finishProgressSuccess(blob, filename);
+                resolve(blob);
+            };
+
+            xhr.onerror = () => reject(new Error("Network error"));
+            xhr.send();
+        });
+    }
+
+    function onProgressModalSave() {
+        const blob = downloadCompleteBlob.value;
+        const filename = downloadCompleteFilename.value;
+        if (blob && filename) triggerBlobDownload(blob, filename);
+        closeProgressModal();
+    }
+
+    function onProgressModalDownloadNew() {
+        closeProgressModal();
+        document.getElementById("download-input")?.scrollIntoView({ behavior: "smooth" });
+    }
+
+    const downloadVideoLoading = computed(
+        () => showDownloadProgressModal.value && !downloadSuccess.value,
+    );
+
     const downloadError = computed(() => {
-        const err =
-            metadataQuery.error.value ??
-            downloadVideoMutation.error.value ??
-            downloadImageMutation.error.value ??
-            downloadAudioMutation.error.value;
+        if (downloadProgressError.value) return downloadProgressError.value;
+        const err = metadataQuery.error.value;
         return err instanceof Error ? err.message : err ? String(err) : "";
     });
 
     function addToHistory(
         url: string,
-        data: { title?: string; thumbnail?: string; videoUrl?: string; images?: string[] },
+        data: { title?: string; thumbnail?: string; videoUrl?: string },
     ) {
-        const type: HistoryItem["type"] = data.videoUrl ? "Video" : data.images?.length || data.thumbnail ? "Image" : "Video";
+        const type: HistoryItem["type"] = "Video";
         const item: HistoryItem = {
             id: `${Date.now()}-${url.slice(-16).replace(/\W/g, "")}`,
             url,
-            title: data.title?.slice(0, 80) || (type === "Image" ? "Facebook Photo" : "Facebook Video"),
-            cover: data.thumbnail || data.images?.[0] || "",
+            title: data.title?.slice(0, 80) || "Facebook Video",
+            cover: data.thumbnail || "",
             type,
             date: Date.now(),
         };
@@ -204,13 +315,12 @@ export function useStateFacebook() {
     function openHistoryItem(item: HistoryItem) {
         videoUrl.value = item.url;
         searchUrl.value = item.url;
-        selectedQualityIndex.value = 0;
-        imageIndex.value = 0;
         videoLoadFailed.value = false;
     }
 
     function getHistoryPreviewUrl(item: HistoryItem): string {
-        return `${baseUrl}/api/${PLATFORM}/preview-image?url=${encodeURIComponent(item.url)}`;
+        // Untuk Facebook, gunakan langsung thumbnail yang sudah disimpan.
+        return item.cover || "";
     }
 
     function triggerBlobDownload(blob: Blob, filename: string) {
@@ -225,31 +335,30 @@ export function useStateFacebook() {
     function onSearch() {
         const url = videoUrl.value.trim();
         if (!url) return;
-        selectedQualityIndex.value = 0;
-        imageIndex.value = 0;
         videoLoadFailed.value = false;
-        downloadVideoMutation.reset();
-        downloadImageMutation.reset();
         searchUrl.value = url;
     }
 
-    function onDownloadVideo(qualityIndex?: number) {
+    async function onDownloadVideo() {
         const url = searchUrl.value.trim();
         if (!url || !videoInfo.value) return;
-        const idx = qualityIndex ?? selectedQualityIndex.value;
-        downloadVideoMutation.mutate({ url, qualityIndex: idx });
-    }
 
-    function onDownloadThumbnail() {
-        const url = searchUrl.value.trim();
-        if (!url) return;
-        downloadImageMutation.mutate({ url, index: imageIndex.value });
-    }
+        const filename = "facebook_video.mp4";
+        const downloadUrl = `${baseUrl}/api/${PLATFORM}/download?url=${encodeURIComponent(url)}`;
 
-    function onDownloadAudio() {
-        const url = searchUrl.value.trim();
-        if (!url || !videoInfo.value?.audioUrl) return;
-        downloadAudioMutation.mutate(url);
+        openProgressModal(filename, [
+            { label: "Format", value: "MP4" },
+            { label: "Source", value: "Facebook" },
+        ]);
+
+        try {
+            await downloadWithProgress(downloadUrl, filename);
+        } catch (err) {
+            downloadProgressError.value =
+                err instanceof Error ? err.message : "Download failed";
+            closeProgressModal();
+            throw err;
+        }
     }
 
     function onDownloadAnother() {
@@ -261,12 +370,9 @@ export function useStateFacebook() {
 
     return {
         videoUrl,
-        selectedQualityIndex,
-        imageIndex,
         downloadLoading,
         downloadError,
         downloadVideoLoading,
-        downloadImageLoading,
         videoLoadFailed,
         videoInfo,
         historyItems,
@@ -276,7 +382,22 @@ export function useStateFacebook() {
         getHistoryPreviewUrl,
         onSearch,
         onDownloadVideo,
-        onDownloadThumbnail,
         onDownloadAnother,
+        showDownloadProgressModal,
+        downloadProgress,
+        downloadStatusText,
+        downloadStageLabel,
+        downloadFileName,
+        downloadLoadedBytes,
+        downloadTotalBytes,
+        downloadSpeedBytesPerSec,
+        downloadRemainingSec,
+        downloadSuccess,
+        downloadCompleteFilename,
+        downloadProgressMetadata,
+        downloadProgressError,
+        closeProgressModal,
+        onProgressModalSave,
+        onProgressModalDownloadNew,
     };
 }

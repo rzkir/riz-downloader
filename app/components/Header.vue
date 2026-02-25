@@ -163,22 +163,16 @@
             <iconify-icon icon="lucide:heart" class="text-[17px]" />
             <span>Donasi</span>
           </NuxtLink>
-          <NuxtLink to="/download"
-            class="flex items-center gap-2 rounded-full px-3 py-2 transition-colors hover:bg-white/10 hover:text-white"
-            exact-active-class="bg-white/15 text-white">
-            <iconify-icon icon="lucide:download" class="text-[17px]" />
-            <span>Download</span>
-          </NuxtLink>
         </div>
 
         <!-- Right side: language + mobile menu -->
         <div class="flex items-center gap-2">
-          <button type="button"
-            class="hidden items-center gap-1.5 rounded-full border border-white/10 bg-white/5 px-3 py-1.5 text-xs font-medium text-white/80 shadow-sm transition hover:border-[#FF3D57]/60 hover:bg-[#FF3D57]/10 hover:text-[#FF3D57] sm:flex"
-            aria-label="Language">
-            <iconify-icon icon="lucide:globe" class="text-[15px] text-[#FF3D57]" />
-            <span>English</span>
-          </button>
+          <NuxtLink to="/download"
+            class="flex items-center gap-2 rounded-full px-3 py-2 transition-colors bg-white/10 text-white  hover:bg-white/10 hover:text-white"
+            exact-active-class="bg-white/15 text-white">
+            <iconify-icon icon="lucide:download" class="text-[17px]" />
+            <span>Download</span>
+          </NuxtLink>
 
           <button type="button"
             class="flex h-9 w-9 items-center justify-center rounded-full border border-white/10 bg-white/5 text-white/90 shadow-sm transition-colors hover:bg-white/10 lg:hidden"
