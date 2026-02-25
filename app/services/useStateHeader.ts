@@ -1,6 +1,7 @@
 export function useStateHeader() {
     const menuOpen = ref(false);
     const servicesOpen = ref(false);
+    const documentsOpen = ref(false);
 
     const route = useRoute();
     watch(
@@ -8,6 +9,7 @@ export function useStateHeader() {
         () => {
             menuOpen.value = false;
             servicesOpen.value = false;
+            documentsOpen.value = false;
         },
     );
 
@@ -15,6 +17,7 @@ export function useStateHeader() {
         if (e.key === "Escape") {
             menuOpen.value = false;
             servicesOpen.value = false;
+            documentsOpen.value = false;
         }
     }
 
@@ -25,5 +28,5 @@ export function useStateHeader() {
         document.removeEventListener("keydown", onKeydown);
     });
 
-    return { menuOpen, servicesOpen };
+    return { menuOpen, servicesOpen, documentsOpen };
 }

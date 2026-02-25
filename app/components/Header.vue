@@ -1,5 +1,5 @@
 <template>
-  <header class="sticky top-0 z-50 w-full border-b border-white/5 bg-[#030515]/90 backdrop-blur-xl">
+  <header class="sticky top-0 z-50 w-full bg-[#05060f]">
     <div class="mx-auto container px-4 py-4">
       <nav class="flex items-center justify-between gap-4">
         <!-- Brand -->
@@ -81,7 +81,8 @@
           <!-- Document conversion -->
           <div class="relative group">
             <button type="button"
-              class="flex items-center gap-2 rounded-full px-3 py-2 transition-colors hover:bg-white/10 hover:text-white">
+              class="flex items-center gap-2 rounded-full px-3 py-2 transition-colors hover:bg-white/10 hover:text-white"
+              :class="{ 'bg-white/15 text-white': isDocumentsActive }">
               <iconify-icon icon="lucide:file-text" class="text-[17px]" />
               <span>Document Converter</span>
               <iconify-icon icon="lucide:chevron-down" class="text-[13px] opacity-70" />
@@ -162,11 +163,11 @@
             <iconify-icon icon="lucide:heart" class="text-[17px]" />
             <span>Donasi</span>
           </NuxtLink>
-          <NuxtLink to="/contact"
+          <NuxtLink to="/download"
             class="flex items-center gap-2 rounded-full px-3 py-2 transition-colors hover:bg-white/10 hover:text-white"
             exact-active-class="bg-white/15 text-white">
-            <iconify-icon icon="lucide:mail" class="text-[17px]" />
-            <span>Contact</span>
+            <iconify-icon icon="lucide:download" class="text-[17px]" />
+            <span>Download</span>
           </NuxtLink>
         </div>
 
@@ -242,50 +243,58 @@
             </Transition>
           </div>
 
-          <div class="space-y-0.5">
-            <p class="px-3 text-[11px] font-semibold uppercase tracking-wide text-white/40">Document Converter</p>
-            <NuxtLink to="/conversi-doc"
-              class="flex items-center gap-2 rounded-lg px-3 py-2 text-sm text-white/90 transition-colors hover:bg-white/10 hover:text-[#FF3D57]"
-              active-class="bg-white/10 text-[#FF3D57]" @click="menuOpen = false">
-              <iconify-icon icon="lucide:file-input" class="text-base" />
-              <span>Conversion Document</span>
-            </NuxtLink>
-            <NuxtLink to="/docx-to.pdf"
-              class="flex items-center gap-2 rounded-lg px-3 py-2 text-sm text-white/90 transition-colors hover:bg-white/10 hover:text-[#FF3D57]"
-              active-class="bg-white/10 text-[#FF3D57]" @click="menuOpen = false">
-              <iconify-icon icon="lucide:file-text" class="text-base" />
-              <span>DOCX to PDF</span>
-            </NuxtLink>
-            <NuxtLink to="/excel-to-pdf"
-              class="flex items-center gap-2 rounded-lg px-3 py-2 text-sm text-white/90 transition-colors hover:bg-white/10 hover:text-[#FF3D57]"
-              active-class="bg-white/10 text-[#FF3D57]" @click="menuOpen = false">
-              <iconify-icon icon="lucide:table" class="text-base" />
-              <span>Excel to PDF</span>
-            </NuxtLink>
-            <NuxtLink to="/ppt-to-pdf"
-              class="flex items-center gap-2 rounded-lg px-3 py-2 text-sm text-white/90 transition-colors hover:bg-white/10 hover:text-[#FF3D57]"
-              active-class="bg-white/10 text-[#FF3D57]" @click="menuOpen = false">
-              <iconify-icon icon="lucide:sliders-horizontal" class="text-base" />
-              <span>PPT to PDF</span>
-            </NuxtLink>
-            <NuxtLink to="/html-to-pdf"
-              class="flex items-center gap-2 rounded-lg px-3 py-2 text-sm text-white/90 transition-colors hover:bg-white/10 hover:text-[#FF3D57]"
-              active-class="bg-white/10 text-[#FF3D57]" @click="menuOpen = false">
-              <iconify-icon icon="lucide:file-code-2" class="text-base" />
-              <span>HTML to PDF</span>
-            </NuxtLink>
-            <NuxtLink to="/pdf-to-docx"
-              class="flex items-center gap-2 rounded-lg px-3 py-2 text-sm text-white/90 transition-colors hover:bg-white/10 hover:text-[#FF3D57]"
-              active-class="bg-white/10 text-[#FF3D57]" @click="menuOpen = false">
-              <iconify-icon icon="lucide:file-text" class="text-base" />
-              <span>PDF to DOCX</span>
-            </NuxtLink>
-            <NuxtLink to="/pdf-to-img"
-              class="flex items-center gap-2 rounded-lg px-3 py-2 text-sm text-white/90 transition-colors hover:bg-white/10 hover:text-[#FF3D57]"
-              active-class="bg-white/10 text-[#FF3D57]" @click="menuOpen = false">
-              <iconify-icon icon="lucide:image" class="text-base" />
-              <span>PDF to Image</span>
-            </NuxtLink>
+          <div class="space-y-1">
+            <button type="button"
+              class="flex w-full items-center justify-between rounded-xl px-3 py-2.5 text-[15px] font-medium text-white/90 transition-colors hover:bg-white/10 hover:text-[#FF3D57]"
+              :class="{ 'bg-white/10 text-[#FF3D57]': isDocumentsActive }" @click="documentsOpen = !documentsOpen">
+              <span class="flex items-center gap-2">
+                <iconify-icon icon="lucide:file-text" class="text-[18px]" />
+                <span>Document Converter</span>
+              </span>
+              <iconify-icon :icon="documentsOpen ? 'lucide:chevron-up' : 'lucide:chevron-down'" class="text-[18px]" />
+            </button>
+            <Transition enter-active-class="transition-all duration-200 ease-out" enter-from-class="opacity-0"
+              enter-to-class="opacity-100" leave-active-class="transition-all duration-150 ease-in"
+              leave-from-class="opacity-100" leave-to-class="opacity-0">
+              <div v-show="documentsOpen" class="space-y-0.5 pl-3">
+                <NuxtLink to="/docx-to-pdf"
+                  class="flex items-center gap-2 rounded-lg px-3 py-2 text-sm text-white/90 transition-colors hover:bg-white/10 hover:text-[#FF3D57]"
+                  active-class="bg-white/10 text-[#FF3D57]" @click="menuOpen = false">
+                  <iconify-icon icon="lucide:file-text" class="text-base" />
+                  <span>DOCX to PDF</span>
+                </NuxtLink>
+                <NuxtLink to="/excel-to-pdf"
+                  class="flex items-center gap-2 rounded-lg px-3 py-2 text-sm text-white/90 transition-colors hover:bg-white/10 hover:text-[#FF3D57]"
+                  active-class="bg-white/10 text-[#FF3D57]" @click="menuOpen = false">
+                  <iconify-icon icon="lucide:table" class="text-base" />
+                  <span>Excel to PDF</span>
+                </NuxtLink>
+                <NuxtLink to="/ppt-to-pdf"
+                  class="flex items-center gap-2 rounded-lg px-3 py-2 text-sm text-white/90 transition-colors hover:bg-white/10 hover:text-[#FF3D57]"
+                  active-class="bg-white/10 text-[#FF3D57]" @click="menuOpen = false">
+                  <iconify-icon icon="lucide:sliders-horizontal" class="text-base" />
+                  <span>PPT to PDF</span>
+                </NuxtLink>
+                <NuxtLink to="/html-to-pdf"
+                  class="flex items-center gap-2 rounded-lg px-3 py-2 text-sm text-white/90 transition-colors hover:bg-white/10 hover:text-[#FF3D57]"
+                  active-class="bg-white/10 text-[#FF3D57]" @click="menuOpen = false">
+                  <iconify-icon icon="lucide:file-code-2" class="text-base" />
+                  <span>HTML to PDF</span>
+                </NuxtLink>
+                <NuxtLink to="/pdf-to-docx"
+                  class="flex items-center gap-2 rounded-lg px-3 py-2 text-sm text-white/90 transition-colors hover:bg-white/10 hover:text-[#FF3D57]"
+                  active-class="bg-white/10 text-[#FF3D57]" @click="menuOpen = false">
+                  <iconify-icon icon="lucide:file-text" class="text-base" />
+                  <span>PDF to DOCX</span>
+                </NuxtLink>
+                <NuxtLink to="/jpg-to-pdf"
+                  class="flex items-center gap-2 rounded-lg px-3 py-2 text-sm text-white/90 transition-colors hover:bg-white/10 hover:text-[#FF3D57]"
+                  active-class="bg-white/10 text-[#FF3D57]" @click="menuOpen = false">
+                  <iconify-icon icon="lucide:image" class="text-base" />
+                  <span>PDF to Image</span>
+                </NuxtLink>
+              </div>
+            </Transition>
           </div>
 
           <NuxtLink to="/donasi"
@@ -294,11 +303,11 @@
             <iconify-icon icon="lucide:heart" class="text-[18px]" />
             <span>Donasi</span>
           </NuxtLink>
-          <NuxtLink to="/contact"
+          <NuxtLink to="/download"
             class="flex items-center gap-2 rounded-xl px-3 py-2.5 text-[15px] font-medium text-white/90 transition-colors hover:bg-white/10 hover:text-[#FF3D57]"
             exact-active-class="bg-white/10 text-[#FF3D57]" @click="menuOpen = false">
-            <iconify-icon icon="lucide:mail" class="text-[18px]" />
-            <span>Contact</span>
+            <iconify-icon icon="lucide:download" class="text-[18px]" />
+            <span>Download</span>
           </NuxtLink>
         </div>
       </Transition>
@@ -309,7 +318,7 @@
 <script setup lang="ts">
 import { useStateHeader } from "~/services/useStateHeader";
 
-const { menuOpen, servicesOpen } = useStateHeader();
+const { menuOpen, servicesOpen, documentsOpen } = useStateHeader();
 const route = useRoute();
 const isServicesActive = computed(
   () =>
@@ -321,5 +330,16 @@ const isServicesActive = computed(
     route.path.startsWith("/instagram/") ||
     route.path.startsWith("/facebook/") ||
     route.path.startsWith("/youtube/"),
+);
+const isDocumentsActive = computed(
+  () =>
+    route.path === "/docx-to-pdf" ||
+    route.path === "/excel-to-pdf" ||
+    route.path === "/ppt-to-pdf" ||
+    route.path === "/html-to-pdf" ||
+    route.path === "/pdf-to-docx" ||
+    route.path === "/pdf-to-excel" ||
+    route.path === "/pdf-to-ppt" ||
+    route.path === "/jpg-to-pdf",
 );
 </script>
