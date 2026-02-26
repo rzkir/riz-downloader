@@ -1,5 +1,9 @@
 import { ref, computed, watch, onMounted } from "vue";
+
+import { toast } from "vue-sonner";
+
 import { useQuery, useMutation } from "@tanstack/vue-query";
+
 import { useAppConfig } from "~/lib/config";
 
 const HISTORY_STORAGE_KEY = "tiktok-download-history";
@@ -37,16 +41,6 @@ function buildVideoInfo(data: TiktokMetadataResponse, baseUrl: string, url: stri
     };
 }
 
-interface TiktokMetadataResponse {
-    videoUrl?: string;
-    videoUrlNoWaterMark?: string;
-    audioUrl?: string;
-    images?: string[] | null;
-    cover?: string;
-    text?: string;
-    author?: string;
-}
-
 export function useStateTiktok() {
     const { apiUrl } = useAppConfig();
     const baseUrl = apiUrl;
@@ -58,6 +52,7 @@ export function useStateTiktok() {
     const videoLoadFailed = ref(false);
     const historyItems = ref<HistoryItem[]>([]);
     const historyReady = ref(false);
+    const showClearHistoryDialog = ref(false);
 
     onMounted(() => {
         historyItems.value = loadHistoryFromStorage();
@@ -167,6 +162,12 @@ export function useStateTiktok() {
         { label: string; value: string; gradient?: boolean }[]
     >([]);
     const downloadProgressError = ref("");
+
+    watch(downloadProgressError, (err) => {
+        if (err) {
+            toast.error(err);
+        }
+    });
 
     let progressSpeedLastLoaded = 0;
     let progressSpeedLastTime = 0;
@@ -467,6 +468,48 @@ export function useStateTiktok() {
         document.getElementById("download-input")?.scrollIntoView({ behavior: "smooth" });
     }
 
+    const onPaste = async () => {
+        try {
+            const text = await navigator.clipboard.readText();
+            if (text?.trim()) {
+                videoUrl.value = text.trim();
+                toast.success("Link berhasil ditempel");
+            } else {
+                toast.error("Clipboard kosong atau bukan teks");
+            }
+        } catch {
+            toast.error(
+                "Akses clipboard ditolak. Izinkan akses atau tempel manual (Ctrl+V)",
+            );
+        }
+    };
+
+    function onCloseClearHistoryDialog() {
+        showClearHistoryDialog.value = false;
+    }
+
+    function onConfirmClearHistory() {
+        clearHistory();
+        showClearHistoryDialog.value = false;
+        toast.success("Riwayat berhasil dihapus");
+    }
+
+    async function handleDownloadVideo() {
+        try {
+            await onDownloadVideo();
+        } catch {
+            toast.error("Gagal unduh video");
+        }
+    }
+
+    async function handleDownloadMp3() {
+        try {
+            await onDownloadMp3();
+        } catch {
+            toast.error("Gagal unduh audio");
+        }
+    }
+
     return {
         videoUrl,
         downloadLoading,
@@ -499,6 +542,12 @@ export function useStateTiktok() {
         downloadCompleteFilename,
         downloadProgressMetadata,
         downloadProgressError,
+        showClearHistoryDialog,
+        onPaste,
+        onCloseClearHistoryDialog,
+        onConfirmClearHistory,
+        handleDownloadVideo,
+        handleDownloadMp3,
         closeProgressModal,
         onProgressModalSave,
         onProgressModalDownloadNew,

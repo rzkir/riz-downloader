@@ -500,28 +500,15 @@
   </section>
 
   <!-- Download Progress Modal -->
-  <LoadingProgress
-    :open="showDownloadProgressModal"
-    :progress="downloadProgress"
-    :status-text="downloadStatusText"
-    :stage-label="downloadStageLabel"
-    :file-name="downloadFileName"
-    :loaded-bytes="downloadLoadedBytes"
-    :total-bytes="downloadTotalBytes"
-    :speed-bytes-per-sec="downloadSpeedBytesPerSec"
-    :remaining-sec="downloadRemainingSec"
-    :success="downloadSuccess"
-    :completed-file-name="downloadCompleteFilename"
-    :metadata="downloadProgressMetadata"
-    @close="closeProgressModal"
-    @save="onProgressModalSave"
-    @download-new="onProgressModalDownloadNew"
-  />
+  <LoadingProgress :open="showDownloadProgressModal" :progress="downloadProgress" :status-text="downloadStatusText"
+    :stage-label="downloadStageLabel" :file-name="downloadFileName" :loaded-bytes="downloadLoadedBytes"
+    :total-bytes="downloadTotalBytes" :speed-bytes-per-sec="downloadSpeedBytesPerSec"
+    :remaining-sec="downloadRemainingSec" :success="downloadSuccess" :completed-file-name="downloadCompleteFilename"
+    :metadata="downloadProgressMetadata" @close="closeProgressModal" @save="onProgressModalSave"
+    @download-new="onProgressModalDownloadNew" />
 </template>
 
 <script setup lang="ts">
-import { ref, watch } from "vue";
-import { toast } from "vue-sonner";
 import { Empty, EmptyHeader, EmptyContent } from "~/components/ui/empty";
 import LoadingProgress from "~/components/LoadingProgress.vue";
 import { useStateTiktok } from "~/services/useStateTiktok";
@@ -558,58 +545,14 @@ const {
   downloadCompleteFilename,
   downloadProgressMetadata,
   downloadProgressError,
+  showClearHistoryDialog,
+  onPaste,
+  onCloseClearHistoryDialog,
+  onConfirmClearHistory,
+  handleDownloadVideo,
+  handleDownloadMp3,
   closeProgressModal,
   onProgressModalSave,
   onProgressModalDownloadNew,
 } = useStateTiktok();
-
-watch(downloadProgressError, (err) => {
-  if (err) {
-    toast.error(err);
-  }
-});
-
-const showClearHistoryDialog = ref(false);
-
-const onPaste = async () => {
-  try {
-    const text = await navigator.clipboard.readText();
-    if (text?.trim()) {
-      videoUrl.value = text.trim();
-      toast.success("Link berhasil ditempel");
-    } else {
-      toast.error("Clipboard kosong atau bukan teks");
-    }
-  } catch {
-    toast.error(
-      "Akses clipboard ditolak. Izinkan akses atau tempel manual (Ctrl+V)",
-    );
-  }
-};
-
-function onCloseClearHistoryDialog() {
-  showClearHistoryDialog.value = false;
-}
-
-function onConfirmClearHistory() {
-  clearHistory();
-  showClearHistoryDialog.value = false;
-  toast.success("Riwayat berhasil dihapus");
-}
-
-async function handleDownloadVideo() {
-  try {
-    await onDownloadVideo();
-  } catch {
-    toast.error("Gagal unduh video");
-  }
-}
-
-async function handleDownloadMp3() {
-  try {
-    await onDownloadMp3();
-  } catch {
-    toast.error("Gagal unduh audio");
-  }
-}
 </script>

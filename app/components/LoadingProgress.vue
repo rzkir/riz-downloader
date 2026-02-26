@@ -136,6 +136,8 @@
 </template>
 
 <script setup lang="ts">
+import { computed, onBeforeUnmount, watch } from "vue";
+
 const glassClass =
   "bg-white/[0.03] backdrop-blur-2xl border border-white/10";
 const gradientClass =
@@ -204,6 +206,20 @@ const remainingDisplay = computed(() => {
   if (props.remainingSec == null) return "—";
   if (props.remainingSec <= 0) return "0s";
   return `${props.remainingSec}s`;
+});
+
+watch(
+  () => props.open,
+  (open) => {
+    if (typeof document === "undefined") return;
+    document.body.style.overflow = open ? "hidden" : "";
+  },
+  { immediate: true },
+);
+
+onBeforeUnmount(() => {
+  if (typeof document === "undefined") return;
+  document.body.style.overflow = "";
 });
 
 function onClose() {

@@ -2,7 +2,7 @@
   <footer class="bg-[#05060f] py-12 px-8">
     <div class="max-w-[1440px] mx-auto flex flex-col md:flex-row justify-between items-center gap-8">
       <p class="text-white/30 text-sm font-medium">
-        &copy; 2024 Media Tools. Made with Passion for Creators.
+        &copy; 2026 Media Tools. Made with Passion for Creators.
       </p>
       <div class="flex gap-10">
         <NuxtLink to="#terms"
@@ -11,6 +11,9 @@
         <NuxtLink to="#privacy"
           class="text-xs uppercase font-heading font-black tracking-widest text-white/40 hover:text-white transition-colors">
           Privacy</NuxtLink>
+        <NuxtLink to="/donasi"
+          class="text-xs uppercase font-heading font-black tracking-widest text-white/40 hover:text-white transition-colors">
+          Donasi</NuxtLink>
         <NuxtLink to="/download"
           class="text-xs uppercase font-heading font-black tracking-widest text-white/40 hover:text-white transition-colors">
           Download</NuxtLink>

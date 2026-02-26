@@ -25,22 +25,6 @@ function saveHistoryToStorage(items: HistoryItem[]) {
   }
 }
 
-interface YoutubeFormat {
-  itag: number;
-  qualityLabel: string | null;
-  mimeType: string | null;
-  isAudioOnly: boolean;
-}
-
-interface YoutubeMetadataResponse {
-  id?: string | null;
-  title?: string | null;
-  duration?: string | null;
-  durationSeconds?: number | null;
-  thumbnail?: string | null;
-  formats?: YoutubeFormat[] | null;
-}
-
 function parseQuality(label: string | null): number {
   if (!label || typeof label !== "string") return 0;
   const m = label.match(/^(\d+)/);
@@ -60,7 +44,8 @@ function buildVideoInfo(
     .filter((f) => !f.isAudioOnly && f.qualityLabel)
     .sort(
       (a, b) =>
-        parseQuality(b.qualityLabel ?? null) - parseQuality(a.qualityLabel ?? null),
+        parseQuality(b.qualityLabel ?? null) -
+        parseQuality(a.qualityLabel ?? null),
     );
 
   const seenLabels = new Set<string>();
@@ -167,7 +152,10 @@ export function useStateYoutube() {
     mutationFn: async ({
       url,
       qualityIndex,
-    }: { url: string; qualityIndex: number }) => {
+    }: {
+      url: string;
+      qualityIndex: number;
+    }) => {
       const params = new URLSearchParams({ url });
       params.set("quality", String(qualityIndex));
       const res = await fetch(
@@ -242,10 +230,7 @@ export function useStateYoutube() {
     downloadProgressError.value = "";
   }
 
-  function updateProgressFromXhr(
-    loaded: number,
-    total: number | null,
-  ) {
+  function updateProgressFromXhr(loaded: number, total: number | null) {
     downloadLoadedBytes.value = loaded;
     downloadTotalBytes.value = total;
     const now = Date.now();
@@ -369,8 +354,12 @@ export function useStateYoutube() {
       ?.scrollIntoView({ behavior: "smooth" });
   }
 
-  const downloadVideoLoading = computed(() => downloadVideoMutation.isPending.value);
-  const downloadMp3Loading = computed(() => downloadMp3Mutation.isPending.value);
+  const downloadVideoLoading = computed(
+    () => downloadVideoMutation.isPending.value,
+  );
+  const downloadMp3Loading = computed(
+    () => downloadMp3Mutation.isPending.value,
+  );
   const downloadImagesLoading = computed(() => false);
   const downloadError = computed(() => {
     if (downloadProgressError.value) return downloadProgressError.value;
@@ -444,11 +433,8 @@ export function useStateYoutube() {
       opts?.length ? opts.length - 1 : 0,
     );
     const qualityIndex = opts?.[uiIndex]?.index ?? uiIndex;
-    const qualityLabel =
-      opts?.[uiIndex]?.label ?? "Default";
-    const filename = info.id
-      ? `youtube_${info.id}.mp4`
-      : "youtube_video.mp4";
+    const qualityLabel = opts?.[uiIndex]?.label ?? "Default";
+    const filename = info.id ? `youtube_${info.id}.mp4` : "youtube_video.mp4";
 
     const params = new URLSearchParams({ url });
     params.set("quality", String(qualityIndex));
@@ -480,9 +466,7 @@ export function useStateYoutube() {
     const url = searchUrl.value.trim();
     const info = videoInfo.value;
     if (!url || !info) return;
-    const filename = info.id
-      ? `youtube_${info.id}.mp3`
-      : "youtube_audio.mp3";
+    const filename = info.id ? `youtube_${info.id}.mp3` : "youtube_audio.mp3";
     const downloadUrl = `${baseUrl}/api/${PLATFORM}/download-mp3?url=${encodeURIComponent(url)}`;
 
     openProgressModal(filename, [
@@ -558,4 +542,3 @@ export function useStateYoutube() {
     onProgressModalDownloadNew,
   };
 }
-

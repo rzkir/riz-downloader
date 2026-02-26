@@ -20,15 +20,4 @@
 
 <script setup>
 import { Toaster } from "~/components/ui/sonner";
-
-useHead({
-  title: "Downloadin - One Tool. All Social Media.",
-  htmlAttrs: {
-    lang: "id",
-  },
-  meta: [
-    { charset: "utf-8" },
-    { name: "viewport", content: "width=device-width, initial-scale=1" },
-  ],
-});
 </script>

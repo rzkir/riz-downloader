@@ -1,20 +1,13 @@
 import { ref, computed, onMounted } from "vue";
+
 import { useMutation } from "@tanstack/vue-query";
+
 import { useAppConfig } from "~/lib/config";
 
 const HISTORY_STORAGE_KEY = "convert-doc-history";
 const HISTORY_MAX = 30;
 
 export type TargetFormat = "pdf" | "docx";
-
-interface HistoryItemConvert {
-  id: string;
-  name: string;
-  fromExt: string;
-  toExt: string;
-  size: number;
-  date: number;
-}
 
 function loadHistoryFromStorage(): HistoryItemConvert[] {
   if (typeof window === "undefined") return [];
@@ -172,4 +165,3 @@ export function useStateConvertDoc() {
     onConvert,
   };
 }
-
