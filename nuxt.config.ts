@@ -1,6 +1,5 @@
 /// <reference types="node" />
 import { defineNuxtConfig } from "nuxt/config";
-// @ts-expect-error - virtual module provided by Tailwind CSS
 import tailwindcss from "@tailwindcss/vite";
 import { createLogger } from "vite";
 
@@ -21,6 +20,7 @@ export default defineNuxtConfig({
   runtimeConfig: {
     public: {
       apiUrl: "",
+      apiSecret: "",
       siteUrl: "https://downloadin.rizkiramadhan.web.id",
     },
   },

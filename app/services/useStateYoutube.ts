@@ -1,6 +1,6 @@
 import { ref, computed, watch, onMounted } from "vue";
 import { useQuery, useMutation } from "@tanstack/vue-query";
-import { useAppConfig } from "~/lib/config";
+import { useAppConfig, withApiSecret } from "~/lib/config";
 
 const HISTORY_STORAGE_KEY = "youtube-download-history";
 const HISTORY_MAX = 50;
@@ -35,6 +35,7 @@ function buildVideoInfo(
   data: YoutubeMetadataResponse,
   baseUrl: string,
   url: string,
+  apiSecret: string,
 ): VideoInfo {
   const formats = data.formats ?? [];
   const hasVideo = formats.some((f) => !f.isAudioOnly);
@@ -59,7 +60,10 @@ function buildVideoInfo(
   });
 
   const previewVideoUrl = hasVideo
-    ? `${baseUrl}/api/${PLATFORM}/preview-video?url=${encodeURIComponent(url)}`
+    ? withApiSecret(
+        `${baseUrl}/api/${PLATFORM}/preview-video?url=${encodeURIComponent(url)}`,
+        apiSecret,
+      )
     : undefined;
 
   return {
@@ -81,7 +85,7 @@ function buildVideoInfo(
 }
 
 export function useStateYoutube() {
-  const { apiUrl } = useAppConfig();
+  const { apiUrl, apiSecret } = useAppConfig();
   const baseUrl = apiUrl;
 
   const videoUrl = ref("");
@@ -104,6 +108,11 @@ export function useStateYoutube() {
         `${baseUrl}/api/${PLATFORM}/metadata?url=${encodeURIComponent(
           searchUrl.value,
         )}`,
+        {
+          headers: {
+            "x-api-secret": apiSecret,
+          },
+        },
       );
       const data = await res.json();
       if (!res.ok)
@@ -118,7 +127,7 @@ export function useStateYoutube() {
     const url = searchUrl.value;
     const data = metadataQuery.data.value;
     if (!url || !data) return null;
-    return buildVideoInfo(data, baseUrl, url);
+    return buildVideoInfo(data, baseUrl, url, apiSecret);
   });
 
   const effectivePreviewVideoUrl = computed(() => {
@@ -160,6 +169,11 @@ export function useStateYoutube() {
       params.set("quality", String(qualityIndex));
       const res = await fetch(
         `${baseUrl}/api/${PLATFORM}/download?${params.toString()}`,
+        {
+          headers: {
+            "x-api-secret": apiSecret,
+          },
+        },
       );
       if (!res.ok) throw new Error("Gagal unduh video");
       return res.blob();
@@ -173,6 +187,11 @@ export function useStateYoutube() {
     mutationFn: async (url: string) => {
       const res = await fetch(
         `${baseUrl}/api/${PLATFORM}/download-mp3?url=${encodeURIComponent(url)}`,
+        {
+          headers: {
+            "x-api-secret": apiSecret,
+          },
+        },
       );
       if (!res.ok) throw new Error("Gagal unduh audio");
       return res.blob();
@@ -336,6 +355,7 @@ export function useStateYoutube() {
       };
 
       xhr.onerror = () => reject(new Error("Network error"));
+      if (apiSecret) xhr.setRequestHeader("x-api-secret", apiSecret);
       xhr.send();
     });
   }

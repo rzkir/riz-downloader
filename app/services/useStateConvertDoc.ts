@@ -29,7 +29,7 @@ function saveHistoryToStorage(items: HistoryItemConvert[]) {
 }
 
 export function useStateConvertDoc() {
-  const { apiUrl } = useAppConfig();
+  const { apiUrl, apiSecret } = useAppConfig();
   const baseUrl = apiUrl;
 
   const file = ref<File | null>(null);
@@ -59,6 +59,7 @@ export function useStateConvertDoc() {
       const res = await fetch(`${baseUrl}/api/convert/document`, {
         method: "POST",
         body: formData,
+        headers: { "x-api-secret": apiSecret },
       });
 
       if (!res.ok) {

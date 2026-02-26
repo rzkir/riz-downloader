@@ -1,6 +1,6 @@
 import { ref, computed, watch, onMounted } from "vue";
 import { useQuery, useMutation } from "@tanstack/vue-query";
-import { useAppConfig } from "~/lib/config";
+import { useAppConfig, withApiSecret } from "~/lib/config";
 
 const HISTORY_STORAGE_KEY = "instagram-download-history";
 const HISTORY_MAX = 50;
@@ -29,19 +29,26 @@ function buildVideoInfo(
   data: InstagramMetadataResponse,
   baseUrl: string,
   url: string,
+  apiSecret: string,
 ): VideoInfo {
   const count = data.images?.length ?? (data.cover ? 1 : 0);
   const previewImageUrls = count
     ? Array.from(
         { length: count },
         (_, i) =>
-          `${baseUrl}/api/${PLATFORM}/preview-image?url=${encodeURIComponent(url)}&index=${i}`,
+          withApiSecret(
+            `${baseUrl}/api/${PLATFORM}/preview-image?url=${encodeURIComponent(url)}&index=${i}`,
+            apiSecret,
+          ),
       )
     : undefined;
   return {
     videoUrl: data.videoUrl,
     previewVideoUrl: data.videoUrl
-      ? `${baseUrl}/api/${PLATFORM}/preview-video?url=${encodeURIComponent(url)}`
+      ? withApiSecret(
+          `${baseUrl}/api/${PLATFORM}/preview-video?url=${encodeURIComponent(url)}`,
+          apiSecret,
+        )
       : undefined,
     audioUrl: undefined,
     images: data.images ?? undefined,
@@ -53,7 +60,7 @@ function buildVideoInfo(
 }
 
 export function useStateInstagram() {
-  const { apiUrl } = useAppConfig();
+  const { apiUrl, apiSecret } = useAppConfig();
   const baseUrl = apiUrl;
 
   // ---- UI state (minimal) ----
@@ -75,6 +82,11 @@ export function useStateInstagram() {
     queryFn: async () => {
       const res = await fetch(
         `${baseUrl}/api/${PLATFORM}/metadata?url=${encodeURIComponent(searchUrl.value)}`,
+        {
+          headers: {
+            "x-api-secret": apiSecret,
+          },
+        },
       );
       const data = await res.json();
       if (!res.ok)
@@ -89,7 +101,7 @@ export function useStateInstagram() {
     const url = searchUrl.value;
     const data = metadataQuery.data.value;
     if (!url || !data) return null;
-    return buildVideoInfo(data, baseUrl, url);
+    return buildVideoInfo(data, baseUrl, url, apiSecret);
   });
 
   const downloadLoading = computed(
@@ -114,6 +126,7 @@ export function useStateInstagram() {
     mutationFn: async (url: string) => {
       const res = await fetch(
         `${baseUrl}/api/${PLATFORM}/download?url=${encodeURIComponent(url)}`,
+        { headers: { "x-api-secret": apiSecret } },
       );
       if (!res.ok) throw new Error("Gagal unduh video");
       return res.blob();
@@ -127,6 +140,7 @@ export function useStateInstagram() {
     mutationFn: async ({ url, index }: { url: string; index: number }) => {
       const res = await fetch(
         `${baseUrl}/api/${PLATFORM}/download-image?url=${encodeURIComponent(url)}&index=${index}`,
+        { headers: { "x-api-secret": apiSecret } },
       );
       if (!res.ok) throw new Error("Gagal unduh gambar");
       return res.blob();
@@ -202,7 +216,10 @@ export function useStateInstagram() {
   }
 
   function getHistoryPreviewUrl(item: HistoryItem): string {
-    return `${baseUrl}/api/${PLATFORM}/preview-image?url=${encodeURIComponent(item.url)}&index=0`;
+    return withApiSecret(
+      `${baseUrl}/api/${PLATFORM}/preview-image?url=${encodeURIComponent(item.url)}&index=0`,
+      apiSecret,
+    );
   }
 
   function triggerBlobDownload(blob: Blob, filename: string) {
