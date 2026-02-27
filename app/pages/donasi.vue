@@ -235,109 +235,29 @@
 
           <!-- Filter bank -->
           <div class="flex flex-wrap gap-2 text-base">
-            <button type="button" class="px-3 py-1 rounded-full border transition" :class="selectedBank === 'bca'
-              ? 'border-emerald-400 bg-emerald-500/10 text-emerald-200'
-              : 'border-white/20 bg-white/5 text-white/60 hover:border-emerald-400 hover:text-emerald-200'"
-              @click="selectedBank = 'bca'">
-              BCA
-            </button>
-            <button type="button" class="px-3 py-1 rounded-full border transition" :class="selectedBank === 'bri'
-              ? 'border-emerald-400 bg-emerald-500/10 text-emerald-200'
-              : 'border-white/20 bg-white/5 text-white/60 hover:border-emerald-400 hover:text-emerald-200'"
-              @click="selectedBank = 'bri'">
-              BRI
-            </button>
-            <button type="button" class="px-3 py-1 rounded-full border transition" :class="selectedBank === 'bni'
-              ? 'border-emerald-400 bg-emerald-500/10 text-emerald-200'
-              : 'border-white/20 bg-white/5 text-white/60 hover:border-emerald-400 hover:text-emerald-200'"
-              @click="selectedBank = 'bni'">
-              BNI
-            </button>
-            <button type="button" class="px-3 py-1 rounded-full border transition" :class="selectedBank === 'mandiri'
-              ? 'border-emerald-400 bg-emerald-500/10 text-emerald-200'
-              : 'border-white/20 bg-white/5 text-white/60 hover:border-emerald-400 hover:text-emerald-200'"
-              @click="selectedBank = 'mandiri'">
-              Mandiri
-            </button>
-            <button type="button" class="px-3 py-1 rounded-full border transition" :class="selectedBank === 'lain'
-              ? 'border-emerald-400 bg-emerald-500/10 text-emerald-200'
-              : 'border-white/20 bg-white/5 text-white/60 hover:border-emerald-400 hover:text-emerald-200'"
-              @click="selectedBank = 'lain'">
-              Bank lain
+            <button v-for="guide in BANK_GUIDES" :key="guide.id" type="button"
+              class="px-3 py-1 rounded-full border transition" :class="selectedBank === guide.id
+                ? 'border-emerald-400 bg-emerald-500/10 text-emerald-200'
+                : 'border-white/20 bg-white/5 text-white/60 hover:border-emerald-400 hover:text-emerald-200'"
+              @click="selectedBank = guide.id">
+              {{ guide.label }}
             </button>
           </div>
 
-          <div v-if="selectedBank === 'bca'" class="space-y-3">
-            <h3 class="text-base font-semibold text-white">1. Dari bank BCA</h3>
+          <div v-if="selectedBankGuide" class="space-y-3">
+            <h3 class="text-base font-semibold text-white">
+              {{ selectedBankGuide.title }}
+            </h3>
             <ol class="list-decimal list-inside space-y-1">
-              <li>Buka aplikasi myBCA / m-BCA / ATM BCA.</li>
-              <li>Pilih menu <span class="font-semibold">Transfer &gt; ke Virtual Account / e-Wallet</span>.</li>
-              <li>
-                Pilih tujuan <span class="font-semibold">GoPay</span> (jika ada) atau masukkan kode sesuai petunjuk
-                di aplikasi bank.
+              <li v-for="(step, index) in selectedBankGuide.steps" :key="index">
+                <template v-if="step.highlightNumber">
+                  {{ step.text }}
+                  <span class="font-mono">{{ GOPAY_NUMBER }}</span>.
+                </template>
+                <template v-else>
+                  {{ step.text }}
+                </template>
               </li>
-              <li>
-                Masukkan nomor GoPay:
-                <span class="font-mono">{{ GOPAY_NUMBER }}</span>.
-              </li>
-              <li>Masukkan nominal donasi sesuai yang tertera.</li>
-              <li>Periksa detail, lalu konfirmasi dan selesaikan transaksi.</li>
-            </ol>
-          </div>
-
-          <div v-else-if="selectedBank === 'bri'" class="space-y-3">
-            <h3 class="text-base font-semibold text-white">2. Dari bank BRI</h3>
-            <ol class="list-decimal list-inside space-y-1">
-              <li>Buka BRImo / Internet Banking / ATM BRI.</li>
-              <li>Pilih menu <span class="font-semibold">Pembayaran / e-Wallet / BRIVA</span>.</li>
-              <li>Pilih atau cari tujuan <span class="font-semibold">GoPay</span>.</li>
-              <li>
-                Masukkan nomor GoPay:
-                <span class="font-mono">{{ GOPAY_NUMBER }}</span>.
-              </li>
-              <li>Isi nominal donasi, lalu lanjutkan hingga pembayaran berhasil.</li>
-            </ol>
-          </div>
-
-          <div v-else-if="selectedBank === 'bni'" class="space-y-3">
-            <h3 class="text-base font-semibold text-white">3. Dari bank BNI</h3>
-            <ol class="list-decimal list-inside space-y-1">
-              <li>Buka aplikasi BNI Mobile Banking atau gunakan ATM BNI.</li>
-              <li>Pilih menu <span class="font-semibold">e-Wallet / Pembayaran</span>.</li>
-              <li>Pilih tujuan <span class="font-semibold">GoPay</span> bila tersedia.</li>
-              <li>
-                Masukkan nomor GoPay:
-                <span class="font-mono">{{ GOPAY_NUMBER }}</span>.
-              </li>
-              <li>Masukkan jumlah donasi dan konfirmasi transaksi.</li>
-            </ol>
-          </div>
-
-          <div v-else-if="selectedBank === 'mandiri'" class="space-y-3">
-            <h3 class="text-base font-semibold text-white">4. Dari bank Mandiri</h3>
-            <ol class="list-decimal list-inside space-y-1">
-              <li>Buka Livin&apos; by Mandiri atau ATM Mandiri.</li>
-              <li>Pilih menu <span class="font-semibold">Bayar / e-Wallet</span>.</li>
-              <li>Pilih <span class="font-semibold">GoPay</span> sebagai tujuan.</li>
-              <li>
-                Masukkan nomor GoPay:
-                <span class="font-mono">{{ GOPAY_NUMBER }}</span>.
-              </li>
-              <li>Isi nominal donasi dan selesaikan pembayaran.</li>
-            </ol>
-          </div>
-
-          <div v-else-if="selectedBank === 'lain'" class="space-y-3">
-            <h3 class="text-base font-semibold text-white">5. Dari bank lain</h3>
-            <ol class="list-decimal list-inside space-y-1">
-              <li>Buka aplikasi mobile banking / internet banking / ATM bank kamu.</li>
-              <li>Cari menu <span class="font-semibold">e-Wallet / Dompet Digital / Virtual Account</span>.</li>
-              <li>Pilih tujuan <span class="font-semibold">GoPay</span> bila tersedia.</li>
-              <li>
-                Masukkan nomor GoPay:
-                <span class="font-mono">{{ GOPAY_NUMBER }}</span>.
-              </li>
-              <li>Isi nominal donasi lalu lanjutkan hingga transaksi berhasil.</li>
             </ol>
           </div>
 
@@ -363,85 +283,25 @@
 </template>
 
 <script setup lang="ts">
-import { computed, onBeforeUnmount, ref, watch } from "vue";
-import { toast } from "vue-sonner";
-import type { DonationPreset, DonationPresetId } from "~/lib/data";
-import { DONATION_PRESETS } from "~/lib/data";
+import { computed } from "vue";
+import { BANK_GUIDES, DONATION_PRESETS, GOPAY_NUMBER } from "~/lib/data";
+import { useStateDonasi } from "~/services/useStateDonasi";
 
-const GOPAY_NUMBER = "081398632939";
+const {
+  amount,
+  selectedPresetId,
+  isBankModalOpen,
+  selectedBank,
+  hasValidAmount,
+  formattedAmount,
+  onPresetClick,
+  onCustomInput,
+  copyGopay,
+  openBankModal,
+  closeBankModal,
+} = useStateDonasi();
 
-type BankKey = "bca" | "bri" | "bni" | "mandiri" | "lain";
-
-const amount = ref<number | null>(50000);
-const selectedPresetId = ref<DonationPresetId | null>("50k");
-const isBankModalOpen = ref(false);
-const selectedBank = ref<BankKey>("bca");
-
-const hasValidAmount = computed(
-  () => typeof amount.value === "number" && amount.value >= 10000,
+const selectedBankGuide = computed(() =>
+  BANK_GUIDES.find((guide) => guide.id === selectedBank.value),
 );
-
-const formattedAmount = computed(() => {
-  if (!hasValidAmount.value || typeof amount.value !== "number") {
-    return "";
-  }
-
-  return new Intl.NumberFormat("id-ID", {
-    style: "currency",
-    currency: "IDR",
-    maximumFractionDigits: 0,
-  }).format(amount.value);
-});
-
-watch(isBankModalOpen, (open) => {
-  if (typeof document === "undefined") return;
-  document.body.style.overflow = open ? "hidden" : "";
-});
-
-onBeforeUnmount(() => {
-  if (typeof document === "undefined") return;
-  document.body.style.overflow = "";
-});
-
-function selectPreset(value: number, id: string) {
-  amount.value = value;
-  selectedPresetId.value = id as DonationPresetId;
-}
-
-function selectCustom() {
-  selectedPresetId.value = "custom";
-}
-
-function onCustomInput() {
-  selectedPresetId.value = "custom";
-}
-
-function onPresetClick(preset: DonationPreset) {
-  if (preset.id === "custom") {
-    selectCustom();
-    return;
-  }
-
-  if (typeof preset.amount === "number") {
-    selectPreset(preset.amount, preset.id);
-  }
-}
-
-async function copyGopay() {
-  try {
-    await navigator.clipboard.writeText(GOPAY_NUMBER);
-    toast.success("Nomor GoPay berhasil disalin");
-  } catch {
-    toast.error("Gagal menyalin nomor GoPay. Coba salin manual.");
-  }
-}
-
-function openBankModal() {
-  if (!hasValidAmount.value) return;
-  isBankModalOpen.value = true;
-}
-
-function closeBankModal() {
-  isBankModalOpen.value = false;
-}
 </script>

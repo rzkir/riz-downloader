@@ -1,4 +1,10 @@
-export type DonationPresetId = "20k" | "50k" | "100k" | "200k" | "500k" | "custom";
+export type DonationPresetId =
+  | "20k"
+  | "50k"
+  | "100k"
+  | "200k"
+  | "500k"
+  | "custom";
 
 export interface DonationPreset {
   id: DonationPresetId;
@@ -85,7 +91,9 @@ export const BANK_GUIDES: BankGuide[] = [
       { text: "Pilih menu Pembayaran / e-Wallet / BRIVA." },
       { text: "Pilih atau cari tujuan GoPay." },
       { text: "Masukkan nomor GoPay:", highlightNumber: true },
-      { text: "Isi nominal donasi, lalu lanjutkan hingga pembayaran berhasil." },
+      {
+        text: "Isi nominal donasi, lalu lanjutkan hingga pembayaran berhasil.",
+      },
     ],
   },
   {
@@ -130,3 +138,4 @@ export const BANK_GUIDES: BankGuide[] = [
   },
 ];
 
+export const GOPAY_NUMBER = "081398632939";
