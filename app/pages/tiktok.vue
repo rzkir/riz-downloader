@@ -408,11 +408,11 @@
         </p>
       </div>
       <div class="flex gap-4">
-        <button type="button"
+        <NuxtLink to="/tiktok-history"
           class="text-white/50 font-heading font-black uppercase text-xs tracking-widest hover:text-white transition-colors flex items-center gap-1">
           View All
           <iconify-icon icon="lucide:arrow-right" class="text-[10px]" />
-        </button>
+        </NuxtLink>
         <button type="button"
           class="text-[#FF3D57] font-heading font-black uppercase text-xs tracking-widest hover:text-white transition-colors"
           @click="showClearHistoryDialog = true">
