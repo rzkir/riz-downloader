@@ -29,17 +29,13 @@ function buildVideoInfo(
   data: InstagramMetadataResponse,
   baseUrl: string,
   url: string,
-  apiSecret: string,
 ): VideoInfo {
   const count = data.images?.length ?? (data.cover ? 1 : 0);
   const previewImageUrls = count
-    ? Array.from(
-        { length: count },
-        (_, i) =>
-          withApiSecret(
-            `${baseUrl}/api/${PLATFORM}/preview-image?url=${encodeURIComponent(url)}&index=${i}`,
-            apiSecret,
-          ),
+    ? Array.from({ length: count }, (_, i) =>
+        withApiSecret(
+          `${baseUrl}/api/${PLATFORM}/preview-image?url=${encodeURIComponent(url)}&index=${i}`,
+        ),
       )
     : undefined;
   return {
@@ -47,7 +43,6 @@ function buildVideoInfo(
     previewVideoUrl: data.videoUrl
       ? withApiSecret(
           `${baseUrl}/api/${PLATFORM}/preview-video?url=${encodeURIComponent(url)}`,
-          apiSecret,
         )
       : undefined,
     audioUrl: undefined,
@@ -60,7 +55,7 @@ function buildVideoInfo(
 }
 
 export function useStateInstagram() {
-  const { apiUrl, apiSecret } = useAppConfig();
+  const { apiUrl } = useAppConfig();
   const baseUrl = apiUrl;
 
   // ---- UI state (minimal) ----
@@ -82,11 +77,6 @@ export function useStateInstagram() {
     queryFn: async () => {
       const res = await fetch(
         `${baseUrl}/api/${PLATFORM}/metadata?url=${encodeURIComponent(searchUrl.value)}`,
-        {
-          headers: {
-            "x-api-secret": apiSecret,
-          },
-        },
       );
       const data = await res.json();
       if (!res.ok)
@@ -101,7 +91,7 @@ export function useStateInstagram() {
     const url = searchUrl.value;
     const data = metadataQuery.data.value;
     if (!url || !data) return null;
-    return buildVideoInfo(data, baseUrl, url, apiSecret);
+    return buildVideoInfo(data, baseUrl, url);
   });
 
   const downloadLoading = computed(
@@ -126,7 +116,6 @@ export function useStateInstagram() {
     mutationFn: async (url: string) => {
       const res = await fetch(
         `${baseUrl}/api/${PLATFORM}/download?url=${encodeURIComponent(url)}`,
-        { headers: { "x-api-secret": apiSecret } },
       );
       if (!res.ok) throw new Error("Gagal unduh video");
       return res.blob();
@@ -140,7 +129,6 @@ export function useStateInstagram() {
     mutationFn: async ({ url, index }: { url: string; index: number }) => {
       const res = await fetch(
         `${baseUrl}/api/${PLATFORM}/download-image?url=${encodeURIComponent(url)}&index=${index}`,
-        { headers: { "x-api-secret": apiSecret } },
       );
       if (!res.ok) throw new Error("Gagal unduh gambar");
       return res.blob();
@@ -218,7 +206,6 @@ export function useStateInstagram() {
   function getHistoryPreviewUrl(item: HistoryItem): string {
     return withApiSecret(
       `${baseUrl}/api/${PLATFORM}/preview-image?url=${encodeURIComponent(item.url)}&index=0`,
-      apiSecret,
     );
   }
 

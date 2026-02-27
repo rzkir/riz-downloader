@@ -33,13 +33,11 @@ function buildVideoInfo(
   data: TiktokMetadataResponse,
   baseUrl: string,
   url: string,
-  apiSecret: string,
 ): VideoInfo {
   return {
     videoUrl: data.videoUrlNoWaterMark ?? data.videoUrl,
     previewVideoUrl: withApiSecret(
       `${baseUrl}/api/${PLATFORM}/preview-video?url=${encodeURIComponent(url)}`,
-      apiSecret,
     ),
     audioUrl: data.audioUrl,
     images: data.images ?? undefined,
@@ -50,7 +48,7 @@ function buildVideoInfo(
 }
 
 export function useStateTiktok() {
-  const { apiUrl, apiSecret } = useAppConfig();
+  const { apiUrl } = useAppConfig();
   const baseUrl = apiUrl;
 
   // ---- UI state (minimal) ----
@@ -73,11 +71,6 @@ export function useStateTiktok() {
     queryFn: async () => {
       const res = await fetch(
         `${baseUrl}/api/${PLATFORM}/metadata?url=${encodeURIComponent(searchUrl.value)}`,
-        {
-          headers: {
-            "x-api-secret": apiSecret,
-          },
-        },
       );
       const data = await res.json();
       if (!res.ok)
@@ -92,7 +85,7 @@ export function useStateTiktok() {
     const url = searchUrl.value;
     const data = metadataQuery.data.value;
     if (!url || !data) return null;
-    return buildVideoInfo(data, baseUrl, url, apiSecret);
+    return buildVideoInfo(data, baseUrl, url);
   });
 
   const downloadLoading = computed(
@@ -118,11 +111,6 @@ export function useStateTiktok() {
     mutationFn: async (url: string) => {
       const res = await fetch(
         `${baseUrl}/api/${PLATFORM}/download?url=${encodeURIComponent(url)}`,
-        {
-          headers: {
-            "x-api-secret": apiSecret,
-          },
-        },
       );
       if (!res.ok) throw new Error("Gagal unduh video");
       return res.blob();
@@ -136,11 +124,6 @@ export function useStateTiktok() {
     mutationFn: async (url: string) => {
       const res = await fetch(
         `${baseUrl}/api/${PLATFORM}/download-mp3?url=${encodeURIComponent(url)}`,
-        {
-          headers: {
-            "x-api-secret": apiSecret,
-          },
-        },
       );
       if (!res.ok) throw new Error("Gagal unduh audio");
       return res.blob();
@@ -154,11 +137,6 @@ export function useStateTiktok() {
     mutationFn: async ({ url, index }: { url: string; index: number }) => {
       const res = await fetch(
         `${baseUrl}/api/${PLATFORM}/download-image?url=${encodeURIComponent(url)}&index=${index}`,
-        {
-          headers: {
-            "x-api-secret": apiSecret,
-          },
-        },
       );
       if (!res.ok) throw new Error("Gagal unduh gambar");
       return res.blob();
@@ -338,7 +316,6 @@ export function useStateTiktok() {
       };
 
       xhr.onerror = () => reject(new Error("Network error"));
-      if (apiSecret) xhr.setRequestHeader("x-api-secret", apiSecret);
       xhr.send();
     });
   }

@@ -29,7 +29,6 @@ function buildVideoInfo(
   data: FacebookMetadataResponse,
   baseUrl: string,
   url: string,
-  apiSecret: string,
 ): VideoInfo {
   return {
     videoUrl: data.videoUrl ?? undefined,
@@ -39,7 +38,6 @@ function buildVideoInfo(
     previewVideoUrl: data.videoUrl
       ? withApiSecret(
           `${baseUrl}/api/${PLATFORM}/preview-video?url=${encodeURIComponent(url)}`,
-          apiSecret,
         )
       : undefined,
     cover: data.thumbnail ?? undefined,
@@ -53,7 +51,7 @@ function buildVideoInfo(
 }
 
 export function useStateFacebook() {
-  const { apiUrl, apiSecret } = useAppConfig();
+  const { apiUrl } = useAppConfig();
   const baseUrl = apiUrl;
 
   const videoUrl = ref("");
@@ -72,11 +70,6 @@ export function useStateFacebook() {
     queryFn: async () => {
       const res = await fetch(
         `${baseUrl}/api/${PLATFORM}/metadata?url=${encodeURIComponent(searchUrl.value)}`,
-        {
-          headers: {
-            "x-api-secret": apiSecret,
-          },
-        },
       );
       const data = await res.json();
       if (!res.ok)
@@ -91,7 +84,7 @@ export function useStateFacebook() {
     const url = searchUrl.value;
     const data = metadataQuery.data.value;
     if (!url || !data) return null;
-    return buildVideoInfo(data, baseUrl, url, apiSecret);
+    return buildVideoInfo(data, baseUrl, url);
   });
 
   const downloadLoading = computed(
@@ -264,7 +257,6 @@ export function useStateFacebook() {
       };
 
       xhr.onerror = () => reject(new Error("Network error"));
-      if (apiSecret) xhr.setRequestHeader("x-api-secret", apiSecret);
       xhr.send();
     });
   }

@@ -3,7 +3,7 @@ import { useMutation } from "@tanstack/vue-query";
 import { useAppConfig } from "~/lib/config";
 
 export function useStatePdfToPpt() {
-  const { apiUrl, apiSecret } = useAppConfig();
+  const { apiUrl } = useAppConfig();
   const baseUrl = apiUrl;
 
   const file = ref<File | null>(null);
@@ -23,7 +23,6 @@ export function useStatePdfToPpt() {
       const res = await fetch(`${baseUrl}/api/convert/pdf-to-ppt`, {
         method: "POST",
         body: formData,
-        headers: { "x-api-secret": apiSecret },
       });
 
       if (!res.ok) {

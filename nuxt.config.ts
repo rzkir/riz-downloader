@@ -20,7 +20,6 @@ export default defineNuxtConfig({
   runtimeConfig: {
     public: {
       apiUrl: "",
-      apiSecret: "",
       siteUrl: "https://mediatools.biz.id",
     },
   },
