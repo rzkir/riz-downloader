@@ -21,7 +21,7 @@ export default defineNuxtConfig({
     public: {
       apiUrl: "",
       apiSecret: "",
-      siteUrl: "https://downloadin.rizkiramadhan.web.id",
+      siteUrl: "https://mediatools.biz.id",
     },
   },
 
@@ -79,5 +79,5 @@ export default defineNuxtConfig({
     })(),
   },
 
-  modules: ["@nuxtjs/robots", "nuxt-simple-sitemap"],
+  modules: ["@nuxtjs/robots"],
 });

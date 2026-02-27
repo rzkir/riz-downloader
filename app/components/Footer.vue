@@ -5,10 +5,10 @@
         &copy; 2026 Media Tools. Made with Passion for Creators.
       </p>
       <div class="flex gap-10">
-        <NuxtLink to="#terms"
+        <NuxtLink to="/terms"
           class="text-xs uppercase font-heading font-black tracking-widest text-white/40 hover:text-white transition-colors">
           Terms</NuxtLink>
-        <NuxtLink to="#privacy"
+        <NuxtLink to="/privacy"
           class="text-xs uppercase font-heading font-black tracking-widest text-white/40 hover:text-white transition-colors">
           Privacy</NuxtLink>
         <NuxtLink to="/donasi"

@@ -3,4 +3,4 @@ User-agent: *
 Disallow:
 
 # Optionally point to your sitemap
-Sitemap: https://downloadin.rizkiramadhan.web.id/sitemap.xml
+Sitemap: https://mediatools.biz.id/sitemap.xml

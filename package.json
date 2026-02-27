@@ -28,7 +28,6 @@
     "@tailwindcss/vite": "^4.2.0",
     "@types/node": "^25.3.0",
     "cross-env": "^7.0.3",
-    "nuxt-simple-sitemap": "^4.4.1",
     "tailwindcss": "^4.2.0",
     "typescript": "^5.9.3"
   }
